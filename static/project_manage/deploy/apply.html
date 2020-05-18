@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>部署工单</title>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/service/common.js"></script>
+    <link rel="stylesheet" href="../../css/lib/iview.css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<div id="app">
+
+
+    <i-form ref="formValidate" :model="formResult" :rules="ruleValidate" :label-width="80">
+        <form-item label="前置工单" prop="prepare_work_order_list">
+            <i-input v-model="formResult.prepare_work_order_list"></i-input>
+        </form-item>
+        <br/>
+
+
+        <form-item label="标题" prop="title">
+            <i-input v-model="formResult.title" placeholder="请输入 标题"></i-input>
+        </form-item>
+        <br/>
+        <form-item label="项目类型" prop="project_type">
+            <i-select v-model="formResult.project_type" placeholder="请选择 项目类型" @on-change="change_project_type">
+                <i-option v-for="item in formValidate.project_type" :value="item.value" :key="item.value">
+                    {{item.label}}
+                </i-option>
+            </i-select>
+        </form-item>
+        <form-item label="部署环境" prop="deploy_env">
+            <i-select v-model="formResult.deploy_env" placeholder="请选择 部署环境" @on-change="change_deploy_env">
+                <i-option v-for="item in formValidate.deploy_env" v-if :value="item.value" :key="item.value">
+                    {{item.label}}
+                </i-option>
+            </i-select>
+        </form-item>
+        <form-item label="部署目标" prop="deploy_target">
+            <i-select v-model="formResult.deploy_target" placeholder="请选择 部署目标" @on-change="change_deploy_target">
+                <i-option v-for="item in formValidate.deploy_target" :value="item.value" :key="item.value">
+                    {{item.label}}
+                </i-option>
+            </i-select>
+        </form-item>
+
+        <form-item label="命名空间" prop="namespace" v-if="vue_data.view_visible.namespace">
+            <i-select v-model="formResult.namespace" placeholder="请选择 命名空间">
+                <i-option v-for="item in formValidate.namespace" :value="item.value" :key="item.value">
+                    {{item.label}}
+                </i-option>
+            </i-select>
+        </form-item>
+
+
+        <form-item label="项目" prop="project">
+            <i-select v-model="formResult.project" placeholder="请选择 项目" @on-change="change_project">
+                <i-option v-for="item in formValidate.project" :value="item.value" :key="item.value">
+                    {{item.label}}
+                </i-option>
+            </i-select>
+        </form-item>
+        <form-item label="镜像id" prop="image_id" v-if="vue_data.view_visible.image_id">
+            <i-input v-model="formResult.image_id" placeholder="请输入 镜像id"></i-input>
+        </form-item>
+        <form-item label="构建信息" v-if="vue_data.view_visible.build_env">
+            <br/>
+            构建的服务器: {{vue_data.formValidate.build_env_host}} <br/>
+            构建的job: {{vue_data.formValidate.build_env_job_name}} <br/>
+        </form-item>
+        <form-item label="包列表" prop="svn_tag_package" v-if="vue_data.view_visible.svn_tag_package">
+            <i-input @on-change="OnInput" v-model="formResult.svn_tag_package" type="textarea"
+                     placeholder="请输入 svn取标签宝地址列表"></i-input>
+        </form-item>
+        <form-item label="部署信息" v-if="vue_data.view_visible.deploy_env_info">
+            <br/>
+            部署的服务器: {{vue_data.formValidate.deploy_env_host}} <br/>
+            部署的根目录: {{vue_data.formValidate.deploy_env_root_path}} <br/>
+            项目目录: {{vue_data.formValidate.deploy_env_project_path}} <br/>
+            禁止的文件夹列表: {{vue_data.formValidate.deploy_env_deploy_env_forbid_dir_list}} <br/>
+        </form-item>
+
+        <form-item label="携带的SQL" prop="code_inner_sql">
+            <i-input @on-change="OnInput" @on-blur="code_inner_sql_on_blur" v-model="formResult.code_inner_sql"
+                     type="textarea"
+                     placeholder="请将此次发包过程中需要审查的SQL黏贴至此, 如无则代表无需审核SQL"></i-input>
+        </form-item>
+        <form-item label="审核流程" prop="apply_process">
+            <steps :current="-1">
+                <step :title="item" v-for="item in formValidate.apply_process_template"></step>
+            </steps>
+            <cascader :data="formValidate.apply_process"
+                      v-model="formResult.apply_process"></cascader>
+        </form-item>
+        <form-item>
+            <i-button typeo="primary" @click="handleSubmit('formValidate')">提交</i-button>
+            <i-button @click="handleReset('formValidate')" style="margin-left: 8px">重置</i-button>
+        </form-item>
+    </i-form>
+</div>
+</body>
+
+
+<script>
+    const vue_data = {
+        view_visible: {
+            namespace: false,
+            image_id: false,
+            svn_tag_package: false,
+            deploy_env_info: false,
+            build_env: false
+        },
+        formValidate: {
+            title: "",
+            apply_process_template: [],
+            apply_process: [],
+            project_type: [],
+            deploy_env: [],
+            deploy_target: [],
+            namespace: [],
+            project: [],
+            image_id: '',
+            svn_tag_package: "",
+            review_process: "",
+            prepare_work_order_list: "",
+        },
+        formResult: {
+            title: "",
+            apply_process: [],
+            project_type: ""
+            , deploy_env: ""
+            , deploy_target: ""
+            , namespace: ""
+            , project: ""
+            , image_id: ''
+            , svn_tag_package: ""
+            , review_process: ""
+            , prepare_work_order_list: ""
+            , code_inner_sql: ""
+        },
+        ruleValidate: {
+            title: [
+                {required: true, message: '标题不能为空', trigger: 'blur'}
+            ],
+            apply_process: [
+                {required: true, type: 'array', message: '审核流程不能为空', trigger: 'change'}
+            ],
+            project_type: [
+                {required: true, message: '请选择项目类型', trigger: 'change'}
+            ],
+            deploy_target: [
+                {required: true, message: '请选择部署目标', trigger: 'change'}
+            ],
+            namespace: [
+                {required: true, message: '请选择命名空间', trigger: 'change'}
+            ],
+            deploy_env: [
+                {required: true, message: '请选择部署环境', trigger: 'change'}
+            ],
+            project: [
+                {required: true, message: '请选择项目', trigger: 'change'}
+            ],
+            image_id: [
+                {required: true, message: '请输入镜像id', trigger: 'blur'}
+            ],
+            svn_tag_package: [
+                {required: true, message: '请输入svn取标签宝地址列表', trigger: 'blur'}
+            ],
+        }
+    };
+    const vue_methods = {
+        OnInput(data) {
+            const src_element = data.srcElement;
+            src_element.style.height = src_element.scrollHeight + "px";
+        },
+        code_inner_sql_on_blur(data) {
+            const src_element = data.srcElement;
+            const input_sql_value = src_element.value;
+            let is_has_sql = false;
+            if (input_sql_value && input_sql_value.trim() != "") {
+                is_has_sql = true;
+            }
+            console.log("is_has_sql: " + is_has_sql);
+            let is_need_reload_process = false;
+            if (is_has_sql && last_process_template_arr_index != 1) {
+                last_process_template_arr_index = 1;
+                is_need_reload_process = true;
+            } else if (!is_has_sql && last_process_template_arr_index != 0) {
+                last_process_template_arr_index = 0;
+                is_need_reload_process = true;
+            }
+            if (is_need_reload_process) {
+                init_process();
+            }
+
+        },
+        change_project_type() {
+            do_change_project_type();
+        },
+        change_deploy_env() {
+            do_change_deploy_env();
+        },
+        change_deploy_target() {
+            do_change_deploy_target();
+        },
+        change_project() {
+            do_change_project();
+        },
+        handleSubmit(name) {
+            this.$refs[name].validate((valid) => {
+                if (!valid) {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: '参数未填写完整',
+                    });
+                    return;
+                }
+
+                async function apply_deploy() {
+                    try {
+                        const sql_invoke_data_new = {
+                            process_template_id: process_template_arr[last_process_template_arr_index]
+                        };
+                        const sql_invoke_data = vue_data.formResult;
+                        for (const sql_invoke_data_item in sql_invoke_data) {
+                            let new_date_item = sql_invoke_data[sql_invoke_data_item];
+                            if (new_date_item && typeof new_date_item == "string") {
+                                new_date_item = new_date_item.trim();
+                            }
+                            if (sql_invoke_data_item == "apply_process") {
+                                let apply_process_value = "";
+                                for (let i = 0; i < new_date_item.length; i++) {
+                                    if (i != 0) {
+                                        apply_process_value += " > ";
+                                    }
+                                    apply_process_value += new_date_item[i];
+                                }
+                                new_date_item = apply_process_value;
+                            }
+                            sql_invoke_data_new[sql_invoke_data_item] = new_date_item;
+                        }
+                        const res_data = await net_request.apply_deploy(sql_invoke_data_new);
+                        console.log(res_data);
+                        // component.$Modal.success({
+                        //     title: "温馨提示",
+                        //     width: 500,
+                        //     content: '申请成功',
+                        //     closable: true,
+                        //     onOk: function () {
+                        //         location.reload();
+                        //     },
+                        // });
+                        component.$Modal.success({
+                            title: "提交成功",
+                            width: 500,
+                            content: '重置表单?(Ecs返回)',
+                            closable: true,
+                            onOk: function () {
+                                vue_methods.handleReset('formValidate.sql_invoke')
+                            }
+                        });
+                    } catch (e) {
+                        console.log(e);
+                        component.$Modal.error({
+                            title: "温馨提示",
+                            width: 500,
+                            content: e.response.data,
+                        });
+                    }
+                }
+
+                apply_deploy();
+            })
+        },
+        handleReset(name) {
+            this.$refs[name].resetFields();
+        }
+    };
+</script>
+<script>
+    var Main = {
+        data() {
+            return vue_data;
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    // 得到项目部署模板
+    const net_request = { // 网络请求
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        // 流程使用
+        get_my_process: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/project_manage/work_order_process/process_template/get_my_process", request_data);
+                return res_data;
+            })
+        },
+        get_process_template_role: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/project_manage/work_order_process/process_template/get_process_template_role", request_data);
+                return res_data;
+            })
+        },
+        // 业务
+        apply_deploy: async function (request_data) {
+            return this.base(async function () {
+                return await axios.post(url_prefix + "/project_manage/deploy_server/apply/do_project_deploy", request_data);
+            })
+        },
+        get_project_manage__deploy_server__template: function () {
+            return this.base(async function () {
+                return await axios.get(url_prefix + "/project_manage/deploy_server/template/get");
+            })
+        },
+    };
+    let template_data = null;
+
+    function do_change_project_type() {
+        // 清除原来的数据
+
+        vue_data.view_visible.namespace = false; // 展示命名空间
+        vue_data.view_visible.image_id = false; //  展示镜像id
+        vue_data.view_visible.svn_tag_package = false;
+        vue_data.view_visible.deploy_env_info = false;
+        vue_data.view_visible.build_env = false;
+
+        vue_data.formResult.deploy_env = null;
+        vue_data.formResult.deploy_target = null;
+        vue_data.formResult.project = null;
+
+        vue_data.formValidate.deploy_env = [];
+        vue_data.formValidate.deploy_target = [];
+        vue_data.formValidate.project = [];
+
+
+        const cur_project_type = vue_data.formResult.project_type;
+        if (!template_data || !cur_project_type) return;
+        const level_env = template_data[cur_project_type];
+        const level_env_arr = Object.keys(level_env);
+        // 部署环境: dev/preproduct/product
+        const deploy_env_temp = [];
+        for (const item of level_env_arr) {
+            deploy_env_temp.push({value: item, label: item});
+        }
+        vue_data.formValidate.deploy_env = deploy_env_temp;
+    }
+
+    function do_change_deploy_env() {
+        let cur_project_type = vue_data.formResult["project_type"];
+        let cur_deploy_env = vue_data.formResult["deploy_env"];
+        if (!template_data || !cur_project_type || !cur_deploy_env) return;
+        console.log(template_data);
+        const level_env_value = template_data[cur_project_type][cur_deploy_env];
+        if (cur_project_type == "java") {
+            // 部署目标: k8s/jenkins
+            const level_env_value_env = level_env_value["env"]; // k8s.default
+            const deploy_target_temp = level_env_value_env.split(".")[0];
+            vue_data.formValidate.deploy_target = [{value: deploy_target_temp, label: deploy_target_temp}];
+            if (deploy_target_temp == "k8s") {
+                vue_data.view_visible.namespace = true; // 展示命名空间
+                vue_data.view_visible.image_id = true; //  展示镜像id
+                const namespace_temp = level_env_value_env.split(".")[1];
+                vue_data.formValidate.namespace = [{value: namespace_temp, label: namespace_temp}];
+            }
+            // 项目
+            const level_env_value_projects = level_env_value["projects"]; // k8s.default
+            const projects_temp = [];
+            if (level_env_value_projects) {
+                for (const level_env_value_projects_key in level_env_value_projects) {
+                    projects_temp.push({
+                        value: level_env_value_projects_key,
+                        label: level_env_value_projects_key
+                    });
+                }
+                vue_data.formValidate.project = projects_temp;
+            }
+        } else {
+            vue_data.view_visible.svn_tag_package = true;
+            vue_data.view_visible.deploy_env_info = true;
+            vue_data.view_visible.build_env = true;
+            vue_data.formValidate.deploy_target = [{value: "server", label: "服务器"}];
+            const level_env_value_env = level_env_value["projects"]; // 所有的项目
+            const project_temp = [];
+            for (const project_part of Object.keys(level_env_value_env)) {
+                project_temp.push({value: project_part, label: project_part});
+                const project_one = level_env_value_env[project_part];
+                // 部署环境
+                const deploy_env = project_one["deploy_env"];
+                const deploy_env_host = deploy_env["host"]; // 部署的服务器
+                const deploy_env_root_path = deploy_env["root_path"]; // 部署的根目录
+                const deploy_env_project_path = deploy_env["project_path"];//项目目录
+                const deploy_env_forbid_dir_list = deploy_env["forbid_dir_list"];//禁止的文件夹列表
+                vue_data.formValidate.deploy_env_host = deploy_env_host;
+                vue_data.formValidate.deploy_env_root_path = deploy_env_root_path;
+                vue_data.formValidate.deploy_env_project_path = deploy_env_project_path;
+                vue_data.formValidate.deploy_env_deploy_env_forbid_dir_list = deploy_env_forbid_dir_list;
+
+                // 构建环境
+                const build_env = project_one["build_env"];
+                const build_env_host = build_env["host"]; // 构建的服务器
+                const build_env_job_name = build_env["job_name"]; // 构建的服务器
+                vue_data.formValidate.build_env_host = build_env_host;
+                vue_data.formValidate.build_env_job_name = build_env_job_name;
+            }
+            vue_data.formValidate.project = project_temp;
+        }
+
+    }
+
+    function do_change_deploy_target() {
+
+    }
+
+    function do_change_project() {
+        // 改变审核流程
+        let cur_project_type = vue_data.formResult["project_type"];
+        let cur_deploy_env = vue_data.formResult["deploy_env"];
+        let cur_project = vue_data.formResult["project"];
+        let review_process = template_data[cur_project_type][cur_deploy_env]["projects"][cur_project]["review_process"]; //审核流程
+        let process_list = review_process.split(">");
+        let cur_review_process = "";
+        for (let i = 0; i < process_list.length; i++) {
+            let process_user = process_list[i];
+            if (process_user && process_user.trim() != "") {
+                process_user = process_user.trim();
+                if (!process_user || process_user == "") break;
+                process_user = process_user.trim();
+                const users_one = users[process_user];
+                cur_review_process += users_one;
+            }
+            if (i != process_list.length - 1) {
+                cur_review_process += " > ";
+            }
+        }
+        if (!cur_review_process) cur_review_process = "";
+        vue_data.formValidate.review_process = cur_review_process;
+    }
+
+
+    async function init_data() {
+        const net_request_result = await net_request.get_project_manage__deploy_server__template();
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+
+        // 填充数据到界面
+        if (!data instanceof Array || data.length < 1) return;
+        const template = data[0]["template"];
+        if (!template) return;
+        template_data = template;
+        // // 得到项目类型
+        let project_type = Object.keys(template);
+        const temp = [];
+        if (project_type && project_type.length > 0) {
+            for (const item of project_type) {
+                temp.push({value: item, label: item});
+            }
+        }
+        vue_data.formValidate.project_type = temp;
+    }
+
+    init_data();
+    let users = {};
+
+    async function init_user_data() {
+        const net_request_result = await axios.get(url_prefix + "/user_manage/users");
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+
+        // 填充数据到界面
+        if (!data instanceof Array || data.length < 1) return;
+        for (const item of data) {
+            users[item["openid"]] = item["nick"];
+        }
+    }
+
+    init_user_data();
+    const process_template_arr = ["project_deploy", "project_deploy_with_sql"];
+    let last_process_template_arr_index = 0;
+
+    async function init_process() {
+        let net_request_result = null;
+        let next_step_select = [];
+        try {
+            const query_condition = {
+                env: "dev",
+                process_template_id: process_template_arr[last_process_template_arr_index]
+            };
+            net_request_result = await net_request.get_process_template_role(query_condition);
+            console.log(net_request_result);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const res_data = net_request_result.data;
+            vue_data.formValidate.apply_process_template = res_data.split(">");
+            // 直接获取当前登录人在当前业务中需要的流程
+            net_request_result = await net_request.get_my_process(query_condition);
+            console.log(net_request_result);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const my_process_list = net_request_result.data; // 注意: 为方便生成界面, 这个流程是反向的
+            for (let i = 0; i < my_process_list.length; i++) {
+                const level_role_item = my_process_list[i];
+                const cur_step_select = [];
+                for (const level_user_item of level_role_item) {
+                    let temp_data;
+                    if (i == 0) {
+                        temp_data = {
+                            value: level_user_item["openid"],
+                            label: level_user_item["nick"],
+                        }
+                    } else {
+                        temp_data = {
+                            value: level_user_item["openid"],
+                            label: level_user_item["nick"],
+                            children: next_step_select // 加入前一次的数据
+                        }
+                    }
+                    cur_step_select.push(temp_data);
+                }
+                next_step_select = cur_step_select;
+            }
+            vue_data.formValidate.apply_process = next_step_select;
+
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+    }
+
+    init_process();
+</script>
+</html>

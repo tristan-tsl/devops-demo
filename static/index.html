@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>自动化运维平台</title>
+    <script src="js/lib/vue.min.js"></script>
+    <link rel="stylesheet" href="css/lib/iview.css">
+    <script src="js/lib/iview/iview.min.js"></script>
+    <script src="js/lib/axios/axios.min.js"></script>
+    <script src="js/service/common.js"></script>
+    <link rel="stylesheet" href="css/commen.css" type="text/css">
+</head>
+<body @load="userAuthority">
+<div id="app" class="clearfix">
+    <i-menu
+            :active-name="default_active_menu"
+            @on-select="jump_content_page"
+            :open-names="['base']" accordion>
+        <menu-item>
+            <img src="image/yibaiLog.png">Pass
+        </menu-item>
+
+        <menu-item name="home">工作台</menu-item>
+        <menu-item name="access_control" v-if="view_visible.other">权限控制</menu-item>
+        <menu-item name="security_audit" v-if="view_visible.other">安全审计</menu-item>
+        <menu-item name="encryption_tool" v-if="view_visible.other">加密工具</menu-item>
+        <menu-item name="general_asset_manage_system" v-if="view_visible.other">通用资产管理</menu-item>
+        <submenu name="base" v-if="view_visible.other">
+            <template slot="title">基地计划</template>
+            <!--            <menu-item name="cloud_manage" v-if="view_visible.other">云管理</menu-item>-->
+            <menu-item name="open_data" v-if="view_visible.other">开放数据</menu-item>
+            <submenu name="base@asset" v-if="view_visible.other">
+                <template slot="title">资产管理</template>
+                <submenu name="asset_manage@server_manage" v-if="view_visible.other">
+                    <template slot="title">服务器管理</template>
+                    <menu-item name="asset_manage@server_manage@data_source" v-if="view_visible.other">数据源
+                    </menu-item>
+                    <menu-item name="asset_manage@server_manage@local_computer" v-if="view_visible.other">本地机房
+                    </menu-item>
+                    <menu-item name="asset_manage@server_manage@ali_cloud" v-if="view_visible.other">阿里云
+                    </menu-item>
+                </submenu>
+                <submenu name="base@asset@db" v-if="view_visible.other">
+                    <template slot="title" v-if="view_visible.other">数据库</template>
+                    <menu-item name="asset_manage@db_manage@mysql" v-if="view_visible.other">MySQL</menu-item>
+                    <menu-item name="asset_manage@db_manage@oracle" v-if="view_visible.other">Oracle</menu-item>
+                </submenu>
+                <submenu name="base@asset@container_schedule" v-if="view_visible.other">
+                    <template slot="title" v-if="view_visible.other">容器调度</template>
+                    <menu-item name="asset_manage@deploy_server@k8s" v-if="view_visible.other">K8S</menu-item>
+                    <menu-item name="asset_manage@deploy_server@VMware" v-if="view_visible.other">WMware</menu-item>
+                </submenu>
+                <submenu name="base@asset@build_service" v-if="view_visible.other">
+                    <template slot="title" v-if="view_visible.other">构建服务</template>
+                    <menu-item name="asset_manage@deploy_server@jenkins" v-if="view_visible.other">jenkins</menu-item>
+                </submenu>
+                <submenu name="base@asset@code" v-if="view_visible.other">
+                    <template slot="title">源码</template>
+                    <menu-item name="asset_manage@code_server@svn" v-if="view_visible.other">SVN</menu-item>
+                    <menu-item name="asset_manage@code_server@gitlab" v-if="view_visible.other">GitLab</menu-item>
+                </submenu>
+            </submenu>
+            <menu-item name="backup_manage" v-if="view_visible.other">备份管理</menu-item>
+        </submenu>
+        <submenu name="war" v-if="view_visible.project_manage">
+            <template slot="title">作战计划</template>
+            <submenu name="war@all" v-if="view_visible.project_manage">
+                <template slot="title">总工单</template>
+                <menu-item name="project_manage@work_order_process@run_manage"
+                           v-if="view_visible.project_manage__work_order_process__run_manage">审核
+                </menu-item>
+                <menu-item name="project_manage@work_order_process@process_template"
+                           v-if="view_visible.project_manage__work_order_process__process_template">模板设计
+                </menu-item>
+                </menu-item>
+            </submenu>
+            <submenu name="code_deploy" v-if="view_visible.project_manage__deploy__apply">
+                <template slot="title">代码部署</template>
+                <menu-item name="project_manage@deploy@topology" v-if="view_visible.other">拓扑图</menu-item>
+                <menu-item name="project_manage@deploy@template" v-if="view_visible.other">模板</menu-item>
+                <menu-item name="project_manage@deploy@apply" v-if="view_visible.project_manage__deploy__apply">工单
+                </menu-item>
+            </submenu>
+            <submenu name="associate_db" v-if="view_visible.project_manage__associate_db__sql_work_order">
+                <template slot="title">数据库</template>
+                <menu-item name="project_manage@associate_db@sql_work_order"
+                           v-if="view_visible.project_manage__associate_db__sql_work_order">工单
+                </menu-item>
+            </submenu>
+            <submenu name="war@plan_task" v-if="view_visible.project_manage__schedule__schedule_work_order">
+                <template slot="title">计划任务</template>
+                <menu-item name="project_manage@schedule@schedule_server_config" v-if="view_visible.other">配置
+                </menu-item>
+                <menu-item name="project_manage@schedule@schedule_work_order"
+                           v-if="view_visible.project_manage__schedule__schedule_work_order">工单
+                </menu-item>
+            </submenu>
+            <submenu name="war@config" v-if="view_visible.other">
+                <template slot="title">配置中心</template>
+                <menu-item name="project_manage@config@config_work_order" v-if="view_visible.other">配置工单</menu-item>
+            </submenu>
+            <submenu name="war@auto_test" v-if="view_visible.other">
+                <template slot="title">自动化测试</template>
+                <menu-item name="auto_test_config" v-if="view_visible.other">配置</menu-item>
+                <menu-item name="test_script_manage" v-if="view_visible.other">测试脚本管理</menu-item>
+            </submenu>
+        </submenu>
+        <submenu name="infrastructure" v-if="view_visible.other">
+            <template slot="title">基础设施</template>
+            <menu-item name="infrastructure@redis" v-if="view_visible.other">redis</menu-item>
+        </submenu>
+        <submenu name="monitoring" v-if="view_visible.other">
+            <template slot="title" v-if="view_visible.other">巡逻兵计划</template>
+            <menu-item name="patrol@config" v-if="view_visible.other">监控配置</menu-item>
+            <menu-item name="patrol@open_monitoring" v-if="view_visible.other">开放监控</menu-item>
+        </submenu>
+        <submenu name="alarm" v-if="view_visible.other">
+            <template slot="title">警报兵计划</template>
+            <menu-item name="alarm@config" v-if="view_visible.other">警报配置</menu-item>
+            <menu-item name="alarm@open_alarm" v-if="view_visible.other">开放警报</menu-item>
+        </submenu>
+        <submenu name="ai" v-if="view_visible.other">
+            <template slot="title">医疗兵计划</template>
+            <menu-item name="medical_config" v-if="view_visible.other">医疗配置</menu-item>
+            <menu-item name="open_medical" v-if="view_visible.other">开放医疗</menu-item>
+        </submenu>
+        <submenu name="logging" v-if="view_visible.other">
+            <template slot="title">日志兵计划</template>
+            <menu-item name="logging_config" v-if="view_visible.other">日志配置</menu-item>
+            <menu-item name="open_logging" v-if="view_visible.other">开放日志</menu-item>
+        </submenu>
+        <submenu name="frontend" v-if="view_visible.other">
+            <template slot="title">前台计划</template>
+            <menu-item name="frontend_plan" v-if="view_visible.other">配置</menu-item>
+            <menu-item name="open_frontend" v-if="view_visible.other">开放前台</menu-item>
+        </submenu>
+    </i-menu>
+    <div id="content_list" style="width: 100vw;">
+    </div>
+</div>
+
+
+<script>
+    if (!window.localStorage) {
+        alert("不支持的浏览器, 请使用新版谷歌浏览器");
+    }
+
+    const DEFAULT_ACTIVE_MENU_STR = "default_active_menu";
+    const route_rule = {
+        "home": "home.html", //首页
+        "access_control": "access_control.html", //权限控制
+        "security_audit": "security_audit.html", //安全审计
+        "encryption_tool": "encryption_tool.html", //加密工具
+        "general_asset_manage_system": "system/general_asset_manage_system/general_asset_manage_system.html", //加密工具
+        "asset_manage": {
+            "server_manage": {
+                "local_computer": "asset_manage/server_manage/local_computer.html",
+                "ali_cloud": "asset_manage/server_manage/ali_cloud.html",
+                "data_source": "asset_manage/server_manage/data_source.html",
+            },
+            // "server_manage": "asset_manage/server_manage.html",//服务器管理
+            "db_manage": {
+                "mysql": "asset_manage/db_manage/mysql.html",//mySQL
+                "oracle": "asset_manage/db_manage/oracle.html",//oracle
+            },
+            "middleware_manage": {
+                "redis": "asset_manage/middleware_manage/redis.html",
+                "mongodb": "asset_manage/middleware_manage/mongodb.html",
+                "kafka": "asset_manage/middleware_manage/kafka.html",
+                "zookeeper": "asset_manage/middleware_manage/zookeeper.html"
+            },
+            "deploy_server": {
+                "k8s": "asset_manage/deploy_server/k8s.html",
+                "VMware": "asset_manage/deploy_server/VMware.html",
+                "jenkins": "asset_manage/deploy_server/jenkins.html",
+                "project_composition": "asset_manage/deploy_server/project_composition.html"
+            },
+            "code_server": {
+                "svn": "asset_manage/code_server/svn.html",
+                "gitlab": "asset_manage/code_server/gitlab.html"
+            },
+            "monitoring_server": {
+                "zabbix": "asset_manage/monitoring_server/zabbix.html",
+                "grafana": "asset_manage/monitoring_server/grafana.html"
+            }
+        },
+        "project_manage": {
+            "work_order_process": {
+                "run_manage": "project_manage/work_order_process/run_manage.html",//工单流程查看
+                "process_template": "project_manage/work_order_process/process_template.html",//工单流程设计
+            },
+            "deploy": {
+                "topology": "project_manage/deploy/topology.html", //部署拓扑图
+                "template": "project_manage/deploy/template.html", //部署模板
+                "apply": "project_manage/deploy/apply.html"//申请部署
+            },
+            "associate_db": {
+                "sql_work_order": "project_manage/associate_db/sql_work_order.html" //SQL工单
+            },
+            "schedule": {
+                "schedule_work_order": "project_manage/schedule/schedule_work_order.html", // 调度工单
+                "schedule_server_config": "project_manage/schedule/schedule_server_config.html", // 调度服务器配置
+            },
+            "config": {
+                "config_work_order": "project_manage/config/config_work_order.html", // 配置管理
+            },
+            "log_query": "project_manage/log_query.html" // 日志查询
+        },
+        "infrastructure": {
+            "redis": "infrastructure/redis.html",
+        },
+        "patrol": { // 巡逻兵
+            "config": "monitoring/config.html",
+            "open_monitoring": "monitoring/open_monitoring.html",
+        },
+        "alarm": { // 警报兵
+            "config": "alarm/config.html",
+            "open_alarm": "alarm/open_alarm.html",
+        },
+        "base_server_manage": "base_server_manage.html", // 基础服务管理
+        "full_link_log": "full_link_log.html", //全链路日志
+        "full_link_monitoring_alarm": "full_link_monitoring_alarm.html", //全链路监控告警
+        "backup_manage": "backup_manage.html",//备份管理平台
+        "security_manage": "security_manage.html",//安全管理平台
+        "open_data": "open_data.html",//开放数据平台
+        "feedback": "feedback.html",//反馈平台
+        "auto_test": "auto_test.html"//自动化测试平台
+    };
+    const view_visible = {
+        project_manage: false,
+        project_manage__work_order_process__process_template: false,
+        project_manage__work_order_process__run_manage: false,
+        project_manage__deploy__apply: false,
+        project_manage__schedule__schedule_work_order: false,
+        project_manage__associate_db__sql_work_order: false,
+        monitoring__open_monitoring: false,
+        other: false,
+    };
+    const vue_data = {
+        manager: false,
+        view_visible: view_visible,
+        default_active_menu: "home",
+    };
+    const vue_methods = {
+        jump_content_page: function (name) {
+            if (!name) return;
+            localStorage.setItem(DEFAULT_ACTIVE_MENU_STR, name);
+            // 判断是否已经存在
+            const ele_content_list = document.getElementById("content_list");
+            var old_iframe_visible;
+            try {
+                var old_iframe;
+                const ele_content_list_children = ele_content_list.children;
+                if (ele_content_list_children && ele_content_list_children.length > 0) {
+                    for (const ele_content_list_children_part of ele_content_list_children) {
+                        if (ele_content_list_children_part.id == name) {
+                            old_iframe = ele_content_list_children_part;
+                        } else {
+                            if (ele_content_list_children_part.style.display == "") {
+                                ele_content_list_children_part.style.display = "none";
+                                old_iframe_visible = ele_content_list_children_part;
+                            }
+                        }
+                    }
+                }
+                if (old_iframe) { // 已经存在则显示原来的
+                    old_iframe.src = old_iframe.src;
+                    if (old_iframe.style.display == "") {
+                        return;
+                    }
+                    old_iframe.style.display = "";
+                    return;
+                }
+            } catch (e) {
+                console.log(e);
+            }
+
+            // 加载新的iframe
+            // 得到iframe_src
+            const name_arr = name.split("@");
+            console.log("name: " + name);
+            if (!name_arr || name_arr.length < 1) return;
+            var iframe_src;
+            const iframe_id = name;
+            var route_rule_result = route_rule;
+            for (const name_arr_part of name_arr) {
+                route_rule_result = route_rule_result[name_arr_part];
+                if (!route_rule_result) break;
+            }
+            if (!route_rule_result) {
+                alert("该功能所在界面不存在");
+                old_iframe_visible.style.display = "";
+                return;
+            }
+            component.$Loading.start();
+            iframe_src = route_rule_result;
+            // 新建一个iframe的格式
+            const new_frame_str = '<iframe id="' + iframe_id + '" src="' + iframe_src + '" style="width: 100%;border: 0px;height:100%" frameborder="0" scrolling="yes" marginheight="0" marginwidth="0"></iframe>';
+            ele_content_list.innerHTML += new_frame_str;
+        },
+
+
+    };
+    const default_active_menu = localStorage.getItem(DEFAULT_ACTIVE_MENU_STR);
+    if (default_active_menu != "") {
+        console.log("default_active_menu: " + default_active_menu);
+        vue_data.default_active_menu = default_active_menu;
+    }
+    var component = new Vue({
+        el: '#app',
+        data: vue_data,
+        methods: vue_methods,
+    });
+
+
+    /*网络请求*/
+    const net_request = {
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        user: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/access_control/my_group_struct_has_static_page", request_data);
+                console.log(res_data);
+                return res_data;
+            })
+        },
+    };
+    window.onload = function () {
+        userSetting()
+    };
+
+    /*判断是系统管理员显示所有权限*/
+    async function userSetting(request_data) {
+        const net_request_result = await net_request.user(request_data);
+        const net_res_data = net_request_result.data;
+        console.log('net_res_data: ', net_res_data);
+        if ("*" in net_res_data) {
+            for (const item_key in view_visible) {
+                view_visible[item_key] = true;
+            }
+        } else {
+            for (const item_key in net_res_data) {
+                view_visible[item_key] = true;
+            }
+        }
+    }
+
+    vue_methods.jump_content_page(vue_data.default_active_menu);
+</script>
+
+
+</body>
+</html>

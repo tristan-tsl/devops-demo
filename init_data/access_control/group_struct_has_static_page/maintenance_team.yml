@@ -1,0 +1,6 @@
+project_manage: true
+project_manage__work_order_process__run_manage: true
+project_manage__deploy__apply: true
+project_manage__schedule__schedule_work_order: true
+project_manage__associate_db__sql_work_order: true
+monitoring__open_monitoring: true

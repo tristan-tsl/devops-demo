@@ -1,0 +1,4 @@
+build:image:
+  image: docker
+  script:
+    - chmod 777 build-docker.sh && dos2unix build-docker.sh && source build-docker.sh

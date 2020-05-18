@@ -1,0 +1,7 @@
+为了方便调试,需要在windows上安装mysql客户端以获得它的辅助工具(mysqldump)
+
+下载地址: https://dev.mysql.com/downloads/mysql/5.7.html
+下载mysql-5.7.27-winx64.zip并解压
+假设解压到D:\program_files\database\mysql-5.7.27-winx64
+配置环境变量: path=D:\program_files\database\mysql-5.7.27-winx64\bin
+输入mysql --version验证

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>权限控制</title>
+    <script src="js/lib/vue.min.js"></script>
+    <script src="js/lib/iview/iview.min.js"></script>
+    <script src="js/lib/axios/axios.min.js"></script>
+    <script src="js/service/common.js"></script>
+    <link rel="stylesheet" href="css/lib/iview.css" type="text/css">
+    <link rel="stylesheet" href="css/commen.css" type="text/css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <tabs value="group_struct">
+        <tab-pane label="组织架构" name="group_struct">
+            <row>
+                <i-col span="4">
+                    组织架构:
+                    <tree :data="group_struct" @on-select-change="on_group_struct_select"></tree>
+                </i-col>
+                <i-col span="15">
+                    人员:
+                    <i-table stripe border :columns="group_struct_has_user.columns"
+                             :data="group_struct_has_user.data"></i-table>
+                    <i-button long
+                              @click="show_group_struct_has_user_drawer">
+                        +
+                    </i-button>
+                    <drawer
+                            :title="group_struct_has_user.drawer.title"
+                            v-model="group_struct_has_user.drawer.model"
+                            width="720"
+                            :mask-closable="false"
+                            :styles="drawer.styles"
+                    >
+                        <i-form :model="group_struct_has_user.drawer.form_data">
+                            <form-item label="用户" label-position="top"
+                                       v-if="group_struct_has_user.drawer.is_add_action">
+                                <i-select v-model="group_struct_has_user.drawer.form_data.user">
+                                    <i-option v-for="item in group_struct_has_user.drawer.init_data.user"
+                                              :value="item.value" :key="item.value">{{
+                                        item.label }}
+                                    </i-option>
+                                </i-select>
+                            </form-item>
+                            <form-item label="标签" label-position="top">
+                                <i-select v-model="group_struct_has_user.drawer.form_data.label" multiple>
+                                    <i-option v-for="item in group_struct_has_user.drawer.init_data.label"
+                                              :value="item.value" :key="item.value">{{
+                                        item.label }}
+                                    </i-option>
+                                </i-select>
+                            </form-item>
+                        </i-form>
+                        <div class="demo-drawer-footer">
+                            <i-button style="margin-right: 8px" @click="group_struct_has_user.drawer.model = false">取消
+                            </i-button>
+                            <i-button type="primary" @click="group_struct_has_user_submit">提交</i-button>
+                        </div>
+                    </drawer>
+                </i-col>
+                <i-col span="5">
+                    权限单元:
+                    <tree :data="group_struct_has_auth_term"></tree>
+                </i-col>
+            </row>
+        </tab-pane>
+        <tab-pane label="权限单元" name="auth_term">
+            <tree :data="auth_term"></tree>
+        </tab-pane>
+        <tab-pane label="用户管理" name="user_manage">
+            <i-table stripe border :columns="user_manage.columns" :data="user_manage.data"></i-table>
+        </tab-pane>
+        <tab-pane label="标签管理" name="label_manage">
+            <i-table stripe border :columns="label_manage.columns" :data="label_manage.data"></i-table>
+            <br/>
+            <i-button long @click="label_manage.drawer.model = true;label_manage.drawer.action='add'">+</i-button>
+
+            <drawer
+                    :title="label_manage.drawer.title"
+                    v-model="label_manage.drawer.model"
+                    width="720"
+                    :mask-closable="false"
+            >
+                <i-form :model="label_manage.drawer.form_data">
+                    <form-item label="名称" label-position="top">
+                        <i-input v-model="label_manage.drawer.form_data.name" placeholder="请输入名称"/>
+                    </form-item>
+                    <form-item label="代码值" label-position="top">
+                        <i-input v-model="label_manage.drawer.form_data.code" placeholder="请输入代码值"/>
+                    </form-item>
+                </i-form>
+                <div class="demo-drawer-footer">
+                    <i-button style="margin-right: 8px" @click="label_manage.drawer.model = false">取消</i-button>
+                    <i-button type="primary" @click="label_manage_submit">提交</i-button>
+                </div>
+            </drawer>
+        </tab-pane>
+    </tabs>
+</div>
+</body>
+
+
+<script>
+    const label_code_to_name = {};
+    const vue_data = {
+        drawer: {
+
+        },
+        auth_term: [],
+        group_struct: [],
+        cur_group_struct: "",
+        group_struct_has_auth_term: [],
+        group_struct_has_user: {
+            columns: [
+                {
+                    title: '行号',
+                    key: 'line_number',
+                    width: 80
+                },
+                {
+                    title: '用户名称',
+                    key: 'nick'
+                },
+                {
+                    title: '用户ID',
+                    key: 'openid'
+                },
+                {
+                    title: '标签code值',
+                    key: 'label'
+                },
+                {
+                    title: '操作',
+                    render: (h, params) => {
+                        const div_data = [];
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: async () => {
+                                    let net_res_result;
+                                    let net_res_data;
+                                    vue_data.group_struct_has_user.drawer.is_add_action = false;
+                                    vue_data.group_struct_has_user.drawer.model = true;
+                                    vue_data.group_struct_has_user.drawer.action = 'modify';
+                                    vue_data.label_manage.drawer.index = params.index;
+                                    const row_data = vue_data.group_struct_has_user.data[params.index];
+                                    // 初始化label下拉框
+                                    const label = row_data["label_value"];
+                                    vue_data.group_struct_has_user.drawer.form_data.label = label;
+                                    // 初始化标签
+                                    net_res_result = await net_request.get_access_control_label_manage();
+                                    net_res_data = net_res_result.data;
+                                    vue_data.group_struct_has_user.drawer.init_data.label = [];
+                                    for (const item of net_res_data) {
+                                        vue_data.group_struct_has_user.drawer.init_data.label.push({
+                                            value: item["code"],
+                                            label: item["name"],
+                                        })
+                                    }
+                                    vue_data.group_struct_has_user.drawer.form_data.user = row_data["openid"];
+                                }
+                            }
+                        }, '修改'));
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: async () => {
+                                    try {
+                                        await net_request.delete_group_struct_has_user({
+                                            group_struct: vue_data.cur_group_struct,
+                                            user_open_id: vue_data.group_struct_has_user.data[params.index]["openid"],
+                                        });
+                                        // 刷新界面数据
+                                        await init_group_struct_has_user();
+                                        component.$Modal.success({
+                                            title: "提交成功",
+                                            width: 500,
+                                            content: '删除成功',
+                                            closable: true
+                                        });
+
+                                    } catch (e) {
+                                        console.log(e);
+                                        component.$Modal.error({
+                                            title: "温馨提示",
+                                            width: 500,
+                                            content: e.response.data,
+                                        });
+                                    }
+                                }
+                            }
+                        }, '删除'));
+                        return h('div', div_data);
+                    }
+                }
+            ],
+            data: [],
+            drawer: {
+                line_number: 0,
+                title: "",
+                action: "",
+                model: false,
+                is_add_action: true,
+                form_data: {
+                    id: "",
+                    name: "",
+                    code: "",
+                    label: "",
+                },
+                init_data: {
+                    user: [],
+                    label: [],
+                }
+            }
+        },
+        user_manage: {
+            columns: [
+                {
+                    title: '行号',
+                    key: 'line_number',
+                    width: 80
+                },
+                {
+                    title: '用户名称',
+                    key: 'nick'
+                },
+                {
+                    title: '用户ID',
+                    key: 'openid'
+                },
+                {
+                    title: '上次更新时间',
+                    key: 'last_update_date'
+                },
+            ],
+            data: []
+        },
+        label_manage: {
+            columns: [
+                {
+                    title: '行号',
+                    key: 'line_number',
+                    width: 80
+                },
+                {
+                    title: '名称',
+                    key: 'name'
+                },
+                {
+                    title: '代码值',
+                    key: 'code'
+                }
+                ,
+                {
+                    title: '操作',
+                    render: (h, params) => {
+                        const div_data = [];
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: () => {
+                                    vue_data.label_manage.drawer.model = true;
+                                    vue_data.label_manage.drawer.action = 'modify';
+                                    vue_data.label_manage.drawer.index = params.index;
+                                    const row_data = vue_data.label_manage.data[params.index];
+                                    // 设置值
+                                    vue_data.label_manage.drawer.form_data.id = row_data["id"];
+                                    vue_data.label_manage.drawer.form_data.name = row_data["name"];
+                                    vue_data.label_manage.drawer.form_data.code = row_data["code"];
+                                }
+                            }
+                        }, '修改'));
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: async () => {
+                                    try {
+                                        const id = vue_data.label_manage.data[params.index]["id"];
+                                        await net_request.delete_access_control_label_manage({
+                                            id: id
+                                        });
+                                        component.$Modal.success({
+                                            title: "提交成功",
+                                            width: 500,
+                                            content: '删除成功',
+                                            closable: true
+                                        });
+                                        // 刷新界面数据
+                                        await init_view_label_manage();
+                                    } catch (e) {
+                                        console.log(e);
+                                        component.$Modal.error({
+                                            title: "温馨提示",
+                                            width: 500,
+                                            content: e.response.data,
+                                        });
+                                    }
+                                }
+                            }
+                        }, '删除'));
+                        return h('div', div_data);
+                    }
+                }
+            ],
+            data: [],
+            drawer: {
+                line_number: 0,
+                title: "",
+                action: "",
+                model: false,
+                form_data: {
+                    id: "",
+                    name: "",
+                    code: ""
+                }
+            }
+        }
+    };
+    const vue_methods = {
+        label_manage_submit: async function () {
+            try {
+                const index = vue_data.label_manage.drawer.index;
+                const id = vue_data.label_manage.drawer.form_data.id;
+                const name = vue_data.label_manage.drawer.form_data.name;
+                const code = vue_data.label_manage.drawer.form_data.code;
+                // 清理原来输入框数据
+                vue_data.label_manage.drawer.form_data.id = "";
+                vue_data.label_manage.drawer.form_data.name = "";
+                vue_data.label_manage.drawer.form_data.code = "";
+                let msg = "";
+                if (!name || name.trim().length < 1) {
+                    msg = "描述不能为空";
+                }
+                if (!code || code.trim().length < 1) {
+                    msg = "名称不能为空";
+                }
+                if (msg != "") {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: msg,
+                    });
+                    return;
+                }
+                let action_str = "";
+                if ("add" == vue_data.label_manage.drawer.action) { // 新增数据
+                    // // 将数据放到表格数据中
+                    // vue_data.label_manage.data.push({
+                    //     line_number: vue_data.label_manage.data.length + 1,
+                    //     name: name,
+                    //     value: value,
+                    // })
+                    // 发送网络请求
+                    await net_request.add_access_control_label_manage({
+                        name: name,
+                        code: code
+                    });
+                    action_str = "新增";
+                } else if ("modify" == vue_data.label_manage.drawer.action) {
+                    // 修改表格中的数据
+                    vue_data.label_manage.data[index]["id"] = id;
+                    vue_data.label_manage.data[index]["name"] = name;
+                    vue_data.label_manage.data[index]["code"] = code;
+                    // 发送网络请求
+                    await net_request.modify_access_control_label_manage({
+                        id: id,
+                        name: name,
+                        code: code
+                    });
+                    action_str = "修改";
+                }
+                component.$Modal.success({
+                    title: action_str + "成功",
+                    width: 500,
+                    content: '操作成功',
+                    closable: true
+                });
+                // 刷新界面数据
+                await init_view_label_manage();
+                vue_data.label_manage.drawer.model = false
+            } catch (e) {
+                console.log(e);
+                component.$Modal.error({
+                    title: "温馨提示",
+                    width: 500,
+                    content: e.response.data,
+                });
+            }
+        },
+        on_group_struct_select: async function (data) {
+            if (!data || data.length < 1) return;
+            const group_struct_select = data[0]["value"];
+            vue_data.cur_group_struct = group_struct_select;
+            // 初始化权限单元
+            const net_res_result = await net_request.get_group_struct_has_auth_term({group_struct: group_struct_select});
+            const net_res_data = net_res_result.data;
+            vue_data.group_struct_has_auth_term = net_res_data;
+            // 初始化人员
+            await init_group_struct_has_user()
+
+        },
+        show_group_struct_has_user_drawer: async function () {
+            vue_data.group_struct_has_user.drawer.model = true;
+            vue_data.group_struct_has_user.drawer.action = 'add';
+            vue_data.group_struct_has_user.drawer.is_add_action = true;
+            vue_data.group_struct_has_user.drawer.form_data.label = "";
+            vue_data.group_struct_has_user.drawer.form_data.user = "";
+            let net_res_result;
+            let net_res_data;
+            // 初始化用户
+            net_res_result = await net_request.get_access_control_user_manage();
+            net_res_data = net_res_result.data;
+            vue_data.group_struct_has_user.drawer.init_data.user = [];
+            for (const item of net_res_data) {
+                vue_data.group_struct_has_user.drawer.init_data.user.push({
+                    value: item["openid"],
+                    label: item["nick"],
+                })
+            }
+            // 初始化标签
+            net_res_result = await net_request.get_access_control_label_manage();
+            net_res_data = net_res_result.data;
+            vue_data.group_struct_has_user.drawer.init_data.label = [];
+            for (const item of net_res_data) {
+                vue_data.group_struct_has_user.drawer.init_data.label.push({
+                    value: item["code"],
+                    label: item["name"],
+                })
+            }
+
+        },
+        group_struct_has_user_submit: async function () {
+            try {
+                const cur_group_struct = vue_data.cur_group_struct;
+                const user = vue_data.group_struct_has_user.drawer.form_data.user;
+                const label = vue_data.group_struct_has_user.drawer.form_data.label;
+                let net_request_data;
+                if (!cur_group_struct || cur_group_struct == "") {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: "请先选择一个组织架构",
+                    });
+                    return;
+                }
+                if (!user || user == "") {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: "请先选择一个用户",
+                    });
+                    return;
+                }
+                if (!label || label.length < 1) {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: "请先选择一个标签",
+                    });
+                    return;
+                }
+                const action = vue_data.group_struct_has_user.drawer.action;
+                net_request_data = {
+                    group_struct: cur_group_struct,
+                    user: user,
+                    label: label,
+                    action: action
+                };
+                // 发送网络请求
+                await net_request.modify_group_struct_has_user(net_request_data);
+                // 刷新列表数据
+                await init_group_struct_has_user();
+
+                component.$Modal.success({
+                    title: "温馨提示",
+                    width: 500,
+                    content: '操作成功',
+                    closable: true
+                });
+            } catch (e) {
+                console.log(e);
+                component.$Modal.error({
+                    title: "温馨提示",
+                    width: 500,
+                    content: e.response.data,
+                });
+            }
+            vue_data.group_struct_has_user.drawer.is_add_action = true;
+            vue_data.group_struct_has_user.drawer.model = false;
+        }
+    };
+</script>
+<script>
+    var Main = {
+        data() {
+            return vue_data;
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    // 得到项目部署模板
+    const net_request = { // 网络请求
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        get_access_control_auth_term: async function () {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/access_control/auth_term");
+                return res_data;
+            })
+        },
+        get_access_control_group_struct: async function () {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/access_control/group_struct");
+                return res_data;
+            })
+        },
+        get_access_control_user_manage: async function () {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/access_control/user_manage");
+                return res_data;
+            })
+        },
+        get_access_control_label_manage: async function () {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/access_control/label_manage");
+                return res_data;
+            })
+        },
+        add_access_control_label_manage: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/access_control/label_manage", request_data);
+                return res_data;
+            })
+        },
+        modify_access_control_label_manage: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.put(url_prefix + "/access_control/label_manage", request_data);
+                return res_data;
+            })
+        },
+        delete_access_control_label_manage: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.delete(url_prefix + "/access_control/label_manage", {data: request_data});
+                return res_data;
+            })
+        },
+        get_group_struct_has_auth_term: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/access_control/group_struct_has_auth_term", request_data);
+                return res_data;
+            })
+        },
+        get_group_struct_has_user: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/access_control/group_struct_has_user", request_data);
+                return res_data;
+            })
+        },
+        modify_group_struct_has_user: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.put(url_prefix + "/access_control/group_struct_has_user", request_data);
+                return res_data;
+            })
+        },
+        delete_group_struct_has_user: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.delete(url_prefix + "/access_control/group_struct_has_user", {data: request_data});
+                return res_data;
+            })
+        },
+    };
+
+    async function init_view_auth_term() {
+        const net_res_result = await net_request.get_access_control_auth_term();
+        const net_res_data = net_res_result.data;
+        vue_data.auth_term = net_res_data;
+    }
+
+    init_view_auth_term();
+
+    async function init_view_group_struct() {
+        const net_res_result = await net_request.get_access_control_group_struct();
+        const net_res_data = net_res_result.data;
+        vue_data.group_struct = net_res_data;
+    }
+
+    init_view_group_struct();
+
+    async function init_view_user_manage() {
+        const net_res_result = await net_request.get_access_control_user_manage();
+        const net_res_data = net_res_result.data;
+        let line_number = 0;
+        for (const item of net_res_data) {
+            line_number++;
+            vue_data.user_manage.data.push({
+                line_number: line_number,
+                nick: item["nick"],
+                openid: item["openid"],
+                last_update_date: item["last_update_date"],
+            });
+        }
+    }
+
+    init_view_user_manage();
+
+
+    async function init_view_label_manage() {
+        vue_data.label_manage.data = [];
+        const net_res_result = await net_request.get_access_control_label_manage();
+        const net_res_data = net_res_result.data;
+        let line_number = 0;
+        for (const item of net_res_data) {
+            line_number++;
+            const code = item["code"];
+            const name = item["name"];
+            vue_data.label_manage.data.push({
+                id: item["_id"]["$oid"],
+                line_number: line_number,
+                name: name,
+                code: code
+            });
+            label_code_to_name[code] = name;
+        }
+    }
+
+    async function init_group_struct_has_user() {
+        const group_struct_select = vue_data.cur_group_struct;
+        const net_res_result = await net_request.get_group_struct_has_user({group_struct: group_struct_select});
+        const net_res_data = net_res_result.data;
+        vue_data.group_struct_has_user.data = [];
+        let line_number = 0;
+        for (const item of net_res_data) {
+            let label_str = "";
+            const label = item["label"];
+            for (const label_item of label) {
+                label_str += label_code_to_name[label_item] + ", ";
+            }
+            if (label_str.length > 0) {
+                label_str = label_str.substring(0, label_str.length - 2);
+            }
+
+            line_number++;
+            vue_data.group_struct_has_user.data.push({
+                line_number: line_number,
+                nick: item["nick"],
+                openid: item["user_open_id"],
+                label: label_str,
+                label_value: label
+            })
+        }
+        await init_view_label_manage();
+    }
+
+    init_view_label_manage();
+</script>
+</html>

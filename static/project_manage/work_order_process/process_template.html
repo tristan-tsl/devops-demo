@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>流程模板</title>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/service/common.js"></script>
+    <link rel="stylesheet" href="../../css/lib/iview.css">
+
+    <link href="../../css/lib/jsoneditor/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="../../js/lib/jsoneditor/jsoneditor.min.js"></script>
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <row :gutter="16">
+        <i-col span="24">
+            <i-button type="success" long @click="upload_data">上传 流程模板 信息</i-button>
+            <div id="container" style=" height: 85vh;"></div>
+        </i-col>
+    </row>
+</div>
+</body>
+<script>
+    var Main = {
+        data() {
+            return {
+                data: {
+                    cur_login_name: my_cookie.get(dingding_login_name_str)
+                }
+            }
+        },
+        methods: {
+            upload_data() {
+                component.$Loading.start();
+                upload_data();
+            }
+        }
+    };
+    var Component = Vue.extend(Main);
+    let component = new Component().$mount('#app');
+    const container_editor = new JSONEditor(document.getElementById("container"), {});
+    const net_request = { // 网络请求
+        get: async function () {
+            return await axios.get(url_prefix + "/project_manage/work_order_process/process_template/get");
+        },
+        update: async function (request_data) {
+            const res_data = await axios.put(url_prefix + "/project_manage/work_order_process/process_template/put", request_data);
+            return res_data;
+        }
+    };
+    let last_upload_data = {};
+    (async function init_get_auth_manage() {
+        const net_request_result = await net_request.get();
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+        last_upload_auth_manage_data = data;
+        delete data["_id"];
+        let res_data = data;
+
+        if (res_data) {
+            container_editor.set(res_data);
+            container_editor.expandAll();
+        }
+    })();
+
+    async function upload_data() {
+        let request_data = await container_editor.get();
+        let is_change = false;
+        if (!deepEqual(request_data, last_upload_data)) is_change = true;
+
+        if (!is_change) {
+            component.$Loading.finish();
+            component.$Message.info('内容并未修改无须保存');
+            return;
+        }
+
+        const net_request_result = await net_request.update(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) {
+            component.$Loading.error();
+            component.$Message.error('保存失败');
+            return;
+        }
+        component.$Loading.finish();
+        component.$Message.success('保存成功');
+        const data = net_request_result.data;
+        console.log(data);
+        last_upload_data = request_data;
+    }
+</script>
+
+</html>

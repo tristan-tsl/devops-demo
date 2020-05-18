@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>监控配置</title>
+    <script src="../js/lib/vue.min.js"></script>
+    <script src="../js/lib/iview/iview.min.js"></script>
+
+    <script src="../js/lib/axios/axios.min.js"></script>
+    <script src="../js/service/common.js"></script>
+    <link rel="stylesheet" href="../css/lib/iview.css">
+
+    <link href="../css/lib/jsoneditor/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="../js/lib/jsoneditor/jsoneditor.min.js"></script>
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <tabs value="config_agent" height="100">
+        <tab-pane label="配置agent" name="config_agent">
+            <row :gutter="16">
+                <i-col span="24">
+                    <i-button type="success" long @click="upload_data">上传 监控配置 信息</i-button>
+                    <div id="svn" style=" height: 85vh;"></div>
+                </i-col>
+            </row>
+        </tab-pane>
+        <tab-pane label="配置文件" name="config_file">
+            <i-button type="success" long @click="upload_data_config_file">上传 配置文件</i-button>
+            <br/>
+            <br/>
+            <br/>
+            <i-input v-model="config_file" type="textarea" :autosize="true" size="large"></i-input>
+        </tab-pane>
+    </tabs>
+</div>
+</body>
+<script>
+    const vue_data = {
+        cur_login_name: my_cookie.get(dingding_login_name_str),
+        config_file: ""
+    };
+    var Main = {
+        data() {
+            return vue_data
+        },
+        methods: {
+            upload_data() {
+                component.$Loading.start();
+                upload_data();
+            },
+            upload_data_config_file() {
+                component.$Loading.start();
+                upload_data_config_file();
+            }
+
+        }
+    };
+    var Component = Vue.extend(Main);
+    let component = new Component().$mount('#app');
+    const svn_editor = new JSONEditor(document.getElementById("svn"), {});
+    const net_request = { // 网络请求
+        get: async function () {
+            return await axios.get(url_prefix + "/monitoring/config/get");
+        },
+        update: async function (request_data) {
+            const res_data = await axios.put(url_prefix + "/monitoring/config/put", request_data);
+            return res_data;
+        },
+        get_config_file: async function () {
+            return await axios.get(url_prefix + "/monitoring/config/get_config_file");
+        },
+        update_config_file: async function (request_data) {
+            const res_data = await axios.put(url_prefix + "/monitoring/config/put_config_file", request_data);
+            return res_data;
+        }
+    };
+    let last_upload_data = {};
+    (async function init_get_auth_manage() {
+        const net_request_result = await net_request.get();
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+        last_upload_auth_manage_data = data;
+        delete data["_id"];
+        let svn_data = data;
+
+        if (svn_data) {
+            svn_editor.set(svn_data);
+            svn_editor.expandAll();
+        }
+    })();
+    (async function init_get_config_file() {
+        const net_request_result = await net_request.get_config_file();
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+        if (data.length > 0) {
+            const config_file = data[0];
+            if (config_file) {
+                const config_file_config_file = config_file["config_file"];
+                if (config_file_config_file) {
+                    vue_data.config_file = config_file_config_file;
+                }
+            }
+        }
+    })();
+
+    async function upload_data() {
+        let request_data = await svn_editor.get();
+        let is_change = false;
+        if (!deepEqual(request_data, last_upload_data)) is_change = true;
+
+        if (!is_change) {
+            component.$Loading.finish();
+            component.$Message.info('内容并未修改无须保存');
+            return;
+        }
+
+        const net_request_result = await net_request.update(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) {
+            component.$Loading.error();
+            component.$Message.error('保存失败');
+            return;
+        }
+        component.$Loading.finish();
+        component.$Message.success('保存成功');
+        const data = net_request_result.data;
+        console.log(data);
+        last_upload_data = request_data;
+    }
+
+    async function upload_data_config_file() {
+        const net_request_result = await net_request.update_config_file({config_file: vue_data.config_file});
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) {
+            component.$Loading.error();
+            component.$Message.error('保存失败');
+            return;
+        }
+        component.$Loading.finish();
+        component.$Message.success('保存成功');
+        const data = net_request_result.data;
+        console.log(data);
+    }
+</script>
+
+</html>

@@ -1,0 +1,12 @@
+requests
+flask
+flask-cors
+pymongo
+kubernetes==8.0.0
+python-jenkins
+pymysql
+sqlparse
+dingtalkchatbot
+paramiko
+mysqlclient
+patool

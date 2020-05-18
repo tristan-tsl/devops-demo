@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>总工单审核</title>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/service/common.js"></script>
+    <link rel="stylesheet" href="../../css/lib/iview.css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<div id="app">
+    <i-form ref="formValidate.search" :model="formResult.search" :label-width="80">
+        <row>
+            <i-col span="8">
+                <form-item label="ID" prop="id">
+                    <i-input v-model="formResult.search.id"></i-input>
+                </form-item>
+            </i-col>
+            <i-col span="4">
+                <form-item label="标题" prop="title">
+                    <i-input v-model="formResult.search.title"></i-input>
+                </form-item>
+            </i-col>
+            <i-col span="4">
+                <form-item label="业务类型" prop="service_type">
+                    <i-select v-model="formResult.search.service_type">
+                        <i-option v-for="item in formValidate.search.service_type" :value="item.value"
+                                  :key="item.value">
+                            {{item.label}}
+                        </i-option>
+                    </i-select>
+                </form-item>
+            </i-col>
+            <i-col span="4">
+                <form-item label="状态" prop="status">
+                    <i-select v-model="formResult.search.status">
+                        <i-option v-for="item in formValidate.search.status" :value="item.value"
+                                  :key="item.value">
+                            {{item.label}}
+                        </i-option>
+                    </i-select>
+                </form-item>
+            </i-col>
+            <i-col span="4">
+                <form-item label="业务执行状态" prop="service_invoke_status">
+                    <i-select v-model="formResult.search.service_invoke_status">
+                        <i-option v-for="item in formValidate.search.service_invoke_status" :value="item.value"
+                                  :key="item.value">
+                            {{item.label}}
+                        </i-option>
+                    </i-select>
+                </form-item>
+            </i-col>
+        </row>
+        <row>
+            <i-col span="6">
+                <form-item label="审核记录" prop="update_datetime">
+                    <date-picker type="daterange" v-model="formResult.search.update_datetime" split-panels
+                                 style="width: 100%"></date-picker>
+                </form-item>
+            </i-col>
+            <i-col span="6">
+                <form-item label="剩余流程">
+                    <radio-group v-model="formResult.search.is_with_me">
+                        <radio label="y">以自己为中心</radio>
+                        <radio label="n">全局</radio>
+                    </radio-group>
+                </form-item>
+            </i-col>
+            <i-col span="6">
+                <form-item label="总体流程">
+                    <radio-group v-model="formResult.search.steps">
+                        <radio :label="formValidate.cur_openid">以自己为中心</radio>
+                        <radio label="">全局</radio>
+                    </radio-group>
+                </form-item>
+            </i-col>
+            <i-col span="6">
+                <form-item style="text-align: right">
+                    <i-button icon="ios-search" type="primary" @click="handleSubmit('formValidate.search')">搜索
+                    </i-button>
+                    <i-button @click="handleReset('formValidate.search')" style="margin-left: 8px">重置</i-button>
+                </form-item>
+            </i-col>
+        </row>
+    </i-form>
+    <i-table height="650" stripe border :columns="columns1" :data="data1" :loading="loading"></i-table>
+    <div style="margin: 10px;overflow: hidden">
+        <div style="float: right;">
+            <page show-sizer :total="formValidate.page.total" :current="1" @on-change="changePage"
+                  @on-page-size-change="changePageSize"/>
+        </div>
+    </div>
+    <modal v-model="formValidate.show_special_invoke_datetime_duration" fullscreen title="修改执行时间段"
+           @on-ok="confirm_special_invoke_datetime_duration">
+        <time-picker format="HH:mm" type="timerange" placement="bottom-end" placeholder="选择时间"
+                     style="width: 168px" v-model="formResult.special_invoke_datetime_duration"></time-picker>
+        <br/><br/><br/>
+        <div>
+            一键设置模板数据:
+        </div>
+        <div>
+            <i-button type="success" long @click="one_click_set_invoke_datetime_duration('12:00-13:30')">
+                设置为12:00-13:30
+            </i-button>
+            <br/><br/>
+            <i-button type="success" long @click="one_click_set_invoke_datetime_duration('18:30-23:30')">
+                设置为18:30-23:30
+            </i-button>
+            <br/><br/>
+        </div>
+
+    </modal>
+</div>
+</body>
+<script>
+    const vue_data = {
+        formValidate: {
+            search: {
+                service_type: [
+                    {value: "", label: "—————全部————"},
+                    {value: "sql_invoke", label: "执行SQL"},
+                    {value: "project_deploy", label: "项目部署"},
+                    {value: "schedule_manage", label: "调度管理"}
+                ],
+                status: [
+                    {value: "", label: "————全部————"},
+                    {value: "FINISH", label: "已完结"},
+                    {value: "RUNNING", label: "运行中"},
+                    {value: "REJECT", label: "已驳回"},
+                    {value: "DESTROY", label: "已销毁"},
+                    {value: "DELAY_INVOKE", label: "延迟执行"},
+                ],
+                service_invoke_status: [
+                    {value: "", label: "————全部————"},
+                    {value: "INVOKING", label: "执行中"},
+                    {value: "SUCCESS", label: "执行成功"},
+                    {value: "FAILURE", label: "执行失败"},
+                ],
+            },
+            page: {total: 0},
+            cur_openid: my_cookie.get(dingding_login_openid_str),
+            show_special_invoke_datetime_duration: false
+        },
+        formResult: {
+            search: {
+                id: "",
+                title: "",
+                service_type: "",
+
+                status: "",
+                next_steps: "",
+                update_datetime: "",
+
+                is_with_me: "",
+                steps: "",
+            },
+            page: {
+                current: 1,
+                total: 0,
+                page_size: 10
+            },
+            special_invoke_datetime_duration: null,
+            cur_table_line: null
+        },
+        columns1: [
+            {
+                title: 'ID',
+                key: 'id'
+                , sortable: true
+            },
+            {
+                title: '标题',
+                key: 'title'
+                , sortable: true
+            },
+            {
+                title: '业务类型',
+                key: 'service_type'
+                , sortable: true
+            },
+            {
+                title: '状态',
+                key: 'status'
+                , sortable: true
+            },
+            {
+                title: '业务执行状态',
+                key: 'service_invoke_status'
+                , sortable: true
+            },
+            {
+                title: '执行时间段',
+                key: 'special_invoke_datetime_duration'
+                , sortable: true
+            },
+            {
+                title: '理由',
+                key: 'reject_reason'
+                , sortable: true
+            },
+            {
+                title: '前置流程',
+                key: 'prepare_work_order_list'
+                , sortable: true
+            },
+            {
+                title: '整体流程',
+                key: 'steps'
+                , sortable: true
+            },
+            {
+                title: '剩余流程',
+                key: 'next_steps'
+                , sortable: true
+            },
+            {
+                title: '审核记录',
+                key: 'update_datetime'
+                , sortable: true
+                , type: "html"
+            },
+            {
+                title: '操作',
+                width: 250,
+                key: 'action',
+                sortable: true,
+                align: 'center',
+                render: (h, params) => {
+                    const div_data = [];
+                    // 检查是否应该显示
+                    const row_data = vue_data.data1[params.index];
+                    const next_step = row_data["next_step"];
+                    const status = row_data["status"];
+                    const status_code = row_data["status_code"];
+                    const is_show_rollback = row_data["is_show_rollback"];
+                    const cur_login_openid = my_cookie.get(dingding_login_openid_str);
+                    if (cur_login_openid == next_step && ["REJECT", "DESTROY"].indexOf(status_code) < 0) {
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: () => {
+                                    do_apply(params.index);
+                                }
+                            }
+                        }, '审核通过'));
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px'
+                            },
+                            on: {
+                                click: () => {
+                                    apply_reject(params.index);
+                                }
+                            }
+                        }, '审核驳回'));
+                    }
+
+                    div_data.push(h('span', {
+                        style: {
+                            paddingLeft: '5px',
+                            color: '#5196fe',
+                            paddingRight: '5px',
+                            cursor: 'pointer'
+                        },
+                        on: {
+                            click: () => {
+                                component.$Modal.info({
+                                    title: '该流程实例中具体需要执行的动作',
+                                    width: 80,
+                                    closable: true,
+                                    content: vue_data.data1[params.index]["display_content"]
+                                })
+                            }
+                        }
+                    }, '内容'));
+                    div_data.push(h('span', {
+                        style: {
+                            color: '#5196fe',
+                            paddingLeft: '5px',
+                            cursor: 'pointer',
+                            borderLeft: '1px solid #409eff',
+                            paddingRight: '5px',
+                        },
+                        on: {
+                            click: async () => {
+                                try {
+                                    const request_data = {"process_instance_id": vue_data.data1[params.index]["id"]};
+                                    const net_request_result = await net_request.list_log(request_data);
+                                    console.log(net_request_result);
+                                    if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+                                    const data = net_request_result.data;
+                                    let display_str = "";
+                                    for (const item of data) {
+                                        display_str += item["is_exe_success"] + ":>>>>>>>>>>>>  <br/>" + item["log"].replaceAll("\\n", "<br/>") + "<br/><br/>";
+                                    }
+
+                                    component.$Modal.info({
+                                        title: '该流程实例中具体需要执行的动作',
+                                        width: 80,
+                                        closable: true,
+                                        content: display_str
+                                    })
+                                } catch (e) {
+                                    console.log(e);
+                                    component.$Modal.error({
+                                        title: "温馨提示",
+                                        width: 500,
+                                        closable: true,
+                                        content: e.response.data,
+                                    });
+                                }
+                            }
+                        }
+                    }, '日志'));
+
+                    if (is_show_rollback) {
+                        // 回滚
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            on: {
+                                click: async () => {
+                                    const is_rollback = vue_data.data1[params.index]["is_rollback"];
+                                    if (is_rollback) {
+                                        component.$Modal.success({
+                                            title: "回滚结果",
+                                            width: 500,
+                                            content: '请勿重复回滚',
+                                            closable: true,
+                                            onOk: function () {
+                                                init_data();
+                                            },
+                                        });
+                                        return;
+                                    }
+
+                                    const id = vue_data.data1[params.index]["id"];
+                                    try {
+                                        component.$Loading.start();
+                                        await net_request.process_action({
+                                            process_instance_id: id,
+                                            action: "ROLLBACK"
+                                        });
+                                        component.$Modal.success({
+                                            title: "回滚结果",
+                                            width: 500,
+                                            content: '回滚成功',
+                                            closable: true,
+                                            onOk: function () {
+                                                init_data();
+                                            },
+                                        });
+                                        await init_data();
+                                    } catch (e) {
+                                        console.log(e);
+                                        component.$Modal.error({
+                                            title: "回滚结果",
+                                            width: 500,
+                                            closable: true,
+                                            content: e.response.data,
+                                        });
+                                    }
+                                }
+                            }
+                        }, '回滚'));
+                    }
+                    if (status_code == "RUNNING" || status_code == "DELAY_INVOKE") {
+                        div_data.push(h('span', {
+                            style: {
+                                color: '#5196fe',
+                                paddingLeft: '5px',
+                                cursor: 'pointer',
+                                borderLeft: '1px solid #409eff',
+                                paddingRight: '5px',
+                            },
+                            on: {
+                                click: () => {
+                                    destroy_process(params.index);
+                                }
+                            }
+                        }, '销毁'));
+                        div_data.push(h('span', {
+                            style: {
+                                color: '#5196fe',
+                                paddingLeft: '5px',
+                                cursor: 'pointer',
+                                borderLeft: '1px solid #409eff',
+                                paddingRight: '5px',
+                            },
+                            on: {
+                                click: () => {
+                                    special_invoke_datetime_duration(params.index);
+                                }
+                            }
+                        }, '指定执行时间段'));
+                    }
+                    let is_show_exception_interrupt_resume = false;
+                    // 当前登录人为整体流程的末端审核人, 业务执行状态为 FAILURE
+                    const service_invoke_status_code = row_data["service_invoke_status_code"];
+                    const steps_code = row_data["steps_code"];
+                    if ("FAILURE" == service_invoke_status_code && get_last_step(steps_code) == my_cookie.get(dingding_login_openid_str)) {
+                        is_show_exception_interrupt_resume = true;
+                    }
+                    if (is_show_exception_interrupt_resume) {
+                        div_data.push(h('Button', {
+                            props: {
+                                type: 'error',
+                                size: 'small'
+                            },
+                            style: {
+                                marginRight: '15px',
+                            },
+                            on: {
+                                click: () => {
+                                    do_exception_interrupt_resume(params.index);
+                                }
+                            }
+                        }, '异常中断恢复'));
+                    }
+
+
+                    return h('div', div_data);
+                }
+            },
+
+        ],
+        data1: [],
+        loading: false,
+    };
+    const vue_methods = {
+        handleSubmit(name) {
+            init_data();
+        },
+        handleReset(name) {
+            this.$refs[name].resetFields();
+        },
+        search() {
+            init_data();
+        },
+        changePage(current) {
+            vue_data.formResult.page.current = current;
+            console.log(vue_data.formResult.page.current);
+            init_data();
+        },
+        changePageSize(page_size) {
+            vue_data.formResult.page.page_size = page_size;
+            console.log(vue_data.formResult.page.page_size);
+            init_data();
+        },
+        confirm_special_invoke_datetime_duration() {
+            do_confirm_special_invoke_datetime_duration();
+        },
+        one_click_set_invoke_datetime_duration(datetime_duration) {
+            console.log("one_click_set_invoke_datetime_duration: " + datetime_duration);
+            vue_data.formResult.special_invoke_datetime_duration = datetime_duration.split("-");
+        }
+    }
+</script>
+<script>
+    const Main = {
+        data() {
+            return vue_data
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    // 网络请求
+    const net_request = {
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        list_log: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/project_manage/work_order_process/run_manage/list_log", request_data);
+                return res_data;
+            })
+        },
+        list_process: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/project_manage/work_order_process/run_manage/list_process", request_data);
+                return res_data;
+            })
+        },
+        process_action: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.put(url_prefix + "/project_manage/work_order_process/run_manage/process_action", request_data);
+                return res_data;
+            })
+        }
+    };
+
+    // 用户
+    let users = {};
+
+    async function init_user_data() {
+        const net_request_result = await axios.get(url_prefix + "/user_manage/users");
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+
+        // 填充数据到界面
+        if (!data instanceof Array || data.length < 1) return;
+        for (const item of data) {
+            users[item["openid"]] = item["nick"];
+        }
+    }
+
+    function get_last_step(steps) {
+        if (!steps) return;
+        const last_sep_index = steps.lastIndexOf(">");
+        if (last_sep_index > -1) {
+            const last_step = steps.substring(last_sep_index + ">".length, steps.length);
+            return last_step.trim();
+        }
+        return steps;
+    }
+
+    function is_show_rollback(steps, status, is_rollback) {
+        if (status != "FINISH") return false;
+        const last_step = get_last_step(steps);
+        const cur_login_openid = my_cookie.get(dingding_login_openid_str);
+        if (cur_login_openid != last_step) return false;
+        if (is_rollback) return false;
+        return true;
+    }
+
+    // 流程列表
+    async function init_data() {
+        vue_data.loading = true;
+        await init_user_data();
+        if ("y" == vue_data.formResult.search.is_with_me) {
+            const my_openid = my_cookie.get(dingding_login_openid_str);
+            vue_data.formResult.search.next_steps = my_openid;
+        } else {
+            vue_data.formResult.search.next_steps = "";
+        }
+        const request_data = vue_data.formResult;
+        const net_request_result = await net_request.list_process(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const page_data = net_request_result.data;
+        vue_data.formValidate.page.total = page_data.total;
+        const data = page_data.data;
+        const data_temp = [];
+        for (const data_part of data) {
+            let update_datetime_str = "";
+            for (const update_datetime_item of data_part["update_datetime"]) {
+                update_datetime_str += new Date(update_datetime_item["$date"]).toLocaleString() + "<br/><hr/>";
+            }
+            update_datetime_str = update_datetime_str.substring(0, update_datetime_str.length - "<hr/>".length);
+            const steps = data_part["steps"];
+            const status = data_part["status"];
+            const is_rollback = data_part["is_rollback"];
+
+            data_temp.push({
+                id: data_part["_id"]["$oid"],
+                title: data_part["title"],
+                service_type: convert_process_service_type_to_name(data_part["service_type"]),
+                status: convert_process_status_code_to_name(status),
+                status_code: status,
+                service_invoke_status: convert_service_invoke_status_to_name(data_part["service_invoke_status"]),
+                service_invoke_status_code: data_part["service_invoke_status"],
+                reject_reason: data_part["reject_reason"],
+                prepare_work_order_list: data_part["prepare_work_order_list"],
+                steps: convert_openid_to_nick(users, steps),
+                steps_code: steps,
+                is_show_rollback: is_show_rollback(steps, status, is_rollback),
+                is_rollback: is_rollback,
+                next_steps: convert_openid_to_nick(users, data_part["next_steps"]),
+                next_step: data_part["next_step"],
+                create_datetime: new Date(data_part["create_datetime"]["$date"]).toLocaleString(),
+                update_datetime: update_datetime_str,
+                display_content: data_part["display_content"].replaceAll("\\n", "<br/>"),
+                special_invoke_datetime_duration: data_part["special_invoke_datetime_duration"],
+            })
+        }
+        vue_data.data1 = data_temp;
+        vue_data.loading = false;
+    }
+
+    init_data();
+
+    async function do_apply(row_index) { // 执行审核
+        const row_data = vue_data.data1[row_index];
+        const id = row_data["id"];
+        // 发起审核
+        try {
+            const res_data = await net_request.process_action({process_instance_id: id, action: "FINISH"});
+            component.$Modal.success({
+                title: "温馨提示",
+                width: 500,
+                content: '审核成功',
+                closable: true,
+                onOk: function () {
+                    init_data();
+                },
+            });
+            await init_data();
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                closable: true,
+                content: e.response.data,
+            });
+        }
+    }
+
+    async function special_invoke_datetime_duration(row_index) {
+        vue_data.formResult.cur_table_line = row_index;
+        vue_data.formValidate.show_special_invoke_datetime_duration = true;
+        const row_data = vue_data.data1[row_index];
+        const special_invoke_datetime_duration = row_data["special_invoke_datetime_duration"];
+        if (special_invoke_datetime_duration) {
+            vue_data.formResult.special_invoke_datetime_duration = special_invoke_datetime_duration.split("-")
+        }
+        // 模拟数据
+        // vue_data.formResult.special_invoke_datetime_duration = ["18:30","11:30"]
+    }
+
+    async function do_confirm_special_invoke_datetime_duration() {
+        const cur_table_line = vue_data.formResult.cur_table_line;
+        if (cur_table_line != null || cur_table_line != undefined) {
+            const row_data = vue_data.data1[cur_table_line];
+            const id = row_data["id"];
+            const special_invoke_datetime_duration = vue_data.formResult.special_invoke_datetime_duration;
+            try {
+                const res_data = await net_request.process_action({
+                    process_instance_id: id,
+                    action: "SPECIAL_INVOKE_DATETIME_DURATION",
+                    special_invoke_datetime_duration: special_invoke_datetime_duration
+                });
+                console.log(res_data);
+                setTimeout(function () {
+                    component.$Modal.success({
+                        title: "温馨提示",
+                        width: 500,
+                        content: '修改成功',
+                        closable: true,
+                        onOk: function () {
+                            init_data();
+                        },
+                    });
+                }, 500)
+            } catch (e) {
+                console.log(e);
+                setTimeout(function () {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        closable: true,
+                        content: e.response.data,
+                    });
+                }, 500)
+            }
+        }
+    }
+
+    async function apply_reject(row_index) { // 审核驳回
+        const row_data = vue_data.data1[row_index];
+        const id = row_data["id"];
+        let reject_reason = "";
+        component.$Modal.confirm({
+            title: "驳回理由",
+            closable: true,
+            render: (h) => {
+                return h('Input', {
+                    props: {
+                        value: this.value,
+                        autofocus: true,
+                        placeholder: '请输入驳回理由'
+                    },
+                    on: {
+                        input: async (val) => {
+                            reject_reason = val;
+                        }
+                    }
+                })
+            },
+            onOk: async () => {
+                if (!reject_reason || reject_reason.trim().length < 1) {
+                    setTimeout(function () {
+                        component.$Modal.error({
+                            width: 500,
+                            title: "温馨提示",
+                            closable: true,
+                            content: "驳回失败,驳回理由不能为空",
+                        });
+                    }, 500);
+                    return true;
+                }
+                try {
+                    const res_data = await net_request.process_action({
+                        process_instance_id: id,
+                        action: "REJECT",
+                        reject_reason: reject_reason
+                    });
+                    setTimeout(function () {
+                        component.$Modal.success({
+                            title: "温馨提示",
+                            width: 500,
+                            content: '驳回成功',
+                            closable: true,
+                            onOk: function () {
+                                init_data();
+                            },
+                        });
+                    }, 500);
+                    await init_data();
+                } catch (e) {
+                    console.log(e);
+                    setTimeout(function () {
+                        component.$Modal.error({
+                            title: "温馨提示",
+                            width: 500,
+                            closable: true,
+                            content: e.response.data,
+                        });
+                    }, 500)
+
+                }
+            },
+        })
+    }
+
+    async function destroy_process(row_index) { // 销毁流程
+        const row_data = vue_data.data1[row_index];
+        const id = row_data["id"];
+        try {
+            const res_data = await net_request.process_action({
+                process_instance_id: id,
+                action: "DESTROY"
+            });
+
+            setTimeout(function () {
+                component.$Modal.success({
+                    title: "温馨提示",
+                    width: 500,
+                    content: '销毁成功',
+                    closable: true,
+                    onOk: function () {
+                        init_data();
+                    },
+                });
+            }, 500);
+            await init_data();
+        } catch (e) {
+            console.log(e);
+            setTimeout(function () {
+                component.$Modal.error({
+                    title: "温馨提示",
+                    width: 500,
+                    closable: true,
+                    content: e.response.data,
+                });
+            }, 500)
+
+        }
+    }
+
+    let request_data = location.href.split("?")[1];
+    if (request_data && request_data.length > 0) {
+        const process_id_data = request_data.split("=");
+        if (process_id_data && process_id_data.length > 0) {
+            vue_data.formResult.search.id = process_id_data[1];
+
+        }
+    }
+    init_data();
+
+    async function do_exception_interrupt_resume(row_index) { // 异常中断恢复
+        const row_data = vue_data.data1[row_index];
+        const id = row_data["id"];
+        // 发起审核
+        try {
+            const res_data = await net_request.process_action({
+                process_instance_id: id,
+                action: "EXCEPTION_INTERRUPT_RESUME"
+            });
+            component.$Modal.success({
+                title: "温馨提示",
+                width: 500,
+                content: '审核成功',
+                closable: true,
+                onOk: function () {
+                    init_data();
+                },
+            });
+            await init_data();
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                closable: true,
+                content: e.response.data,
+            });
+        }
+    }
+</script>
+
+</html>

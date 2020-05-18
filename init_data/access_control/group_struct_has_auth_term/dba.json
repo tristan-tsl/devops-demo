@@ -1,0 +1,200 @@
+[
+  {
+    "title": "用户管理",
+    "value": "user_manage",
+    "children": [
+      {
+        "title": "查询用户",
+        "value": "users:get"
+      },
+      {
+        "title": "或者指定用户的名称",
+        "value": "get_nick_by_open_id:post"
+      }
+    ]
+  },
+  {
+    "title": "项目管理",
+    "value": "project_manage",
+    "children": [
+      {
+        "title": "工单流程",
+        "value": "work_order_process",
+        "children": [
+          {
+            "title": "运转管理",
+            "value": "run_manage",
+            "children": [
+              {
+                "title": "查看日志",
+                "value": "list_log:post"
+              },
+              {
+                "title": "查看流程",
+                "value": "list_process:post"
+              },
+              {
+                "title": "流程动作",
+                "value": "process_action:put"
+              }
+            ]
+          },
+          {
+            "title": "流程模板",
+            "value": "process_template",
+            "children": [
+              {
+                "title": "查询",
+                "value": "get:get"
+              },
+              {
+                "title": "获取流程角色",
+                "value": "get_process_template_role:post"
+              },
+              {
+                "title": "获取我的流程",
+                "value": "get_my_process:post"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "部署服务",
+        "value": "deploy_server",
+        "children": [
+          {
+            "title": "模板",
+            "value": "template",
+            "children": [
+              {
+                "title": "查询",
+                "value": "get:get"
+              },
+              {
+                "title": "修改",
+                "value": "put:put"
+              }
+            ]
+          },
+          {
+            "title": "使用",
+            "value": "apply",
+            "children": [
+              {
+                "title": "部署项目",
+                "value": "do_project_deploy:post"
+              },
+              {
+                "title": "获取部署项目的流程",
+                "value": "get_process:get"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "计划任务",
+        "value": "schedule",
+        "children": [
+          {
+            "title": "工单",
+            "value": "schedule_work_order",
+            "children": [
+              {
+                "title": "获取流程",
+                "value": "get_process:get"
+              },
+              {
+                "title": "修改crontab文件",
+                "value": "crontab_file_content_list:post"
+              },
+              {
+                "title": "发起工单",
+                "value": "request_schedule_work_order:post"
+              }
+            ]
+          },
+          {
+            "title": "配置",
+            "value": "schedule_server_config",
+            "children": [
+              {
+                "title": "获取配置",
+                "value": "get:get"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "数据库",
+        "value": "associate_db",
+        "children": [
+          {
+            "title": "角色管理",
+            "value": "role_manage",
+            "children": [
+              {
+                "title": "查询",
+                "value": "get:get"
+              },
+              {
+                "title": "修改",
+                "value": "put:put"
+              }
+            ]
+          },
+          {
+            "title": "用户标记",
+            "value": "user_label_product",
+            "children": [
+              {
+                "title": "查询",
+                "value": "get:get"
+              }
+            ]
+          },
+          {
+            "title": "工单",
+            "value": "sql_work_order",
+            "children": [
+              {
+                "title": "获取mysql元数据",
+                "value": "get_mysql_metadata:get"
+              },
+              {
+                "title": "获取mysql实例",
+                "value": "get_database_by_mysql_instance:post"
+              },
+              {
+                "title": "获取流程",
+                "value": "get_sql_work_order_process:get"
+              },
+              {
+                "title": "发起工单",
+                "value": "do_sql_invoke:post"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "监控",
+    "value": "monitoring",
+    "children": [
+      {
+        "title": "配置",
+        "value": "config",
+        "children": [
+          {
+            "title": "查询grafana",
+            "value": "get_grafana:get"
+          }
+        ]
+      }
+    ]
+  }
+]

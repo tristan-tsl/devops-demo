@@ -1,0 +1,628 @@
+[
+  {
+    "detail": [
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "detail": [
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell55",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dell",
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "dell",
+    "detail": [
+      {
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "dell",
+    "detail": [
+      {
+        "cpu": "E5-2640V4",
+        "memory": "16G*4",
+        "disk": "240GSSSD*2",
+        "system": "600GSAS*8",
+        "virtual": "11111",
+        "userinfo": {
+          "name_title": [
+            {
+              "title": "title",
+              "key": "index"
+            },
+            {
+              "title": "姓名",
+              "key": "name"
+            }
+          ],
+          "user_name": [
+            {
+              "name": "王明"
+            },
+            {
+              "name": "张刚"
+            }
+          ]
+        },
+        "authData": [
+          {
+            "expand": true,
+            "title": "权限设置",
+            "children": [
+              {
+                "title": "权限设置 1-0",
+                "expand": true,
+                "disabled": true,
+                "children": [
+                  {
+                    "title": "权限设置1",
+                    "disableCheckbox": true
+                  },
+                  {
+                    "title": "权限设置2"
+                  }
+                ]
+              },
+              {
+                "title": "平台权限 1-1",
+                "expand": true,
+                "checked": true,
+                "type": "html",
+                "children": [
+                  {
+                    "title": "添加"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

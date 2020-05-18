@@ -1,0 +1,6 @@
+yum install -y git
+mkdir docker && cd docker
+rm -rf install
+git clone https://gitlab.com/tristan-pass/infrastructure/docker/install.git
+cd install
+chmod +x docker-install.sh && ./docker-install.sh

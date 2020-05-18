@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的首页</title>
+    <script src="js/lib/vue.min.js"></script>
+    <script src="js/lib/iview/iview.min.js"></script>
+
+    <script src="js/lib/axios/axios.min.js"></script>
+    <script src="js/lib/dingding/dinglogin/0.0.5/ddLogin.js"></script>
+    <script src="js/service/common.js"></script>
+    <link rel="stylesheet" href="css/lib/iview.css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <i-button icon="ios-power" type="error" long @click="logout">{{data.cur_login_name}}---注销登录</i-button>
+</div>
+</body>
+<script>
+    var Main = {
+        data() {
+            return {
+                data: {
+                    cur_login_name: my_cookie.get(dingding_login_name_str)
+                }
+            }
+        },
+        methods: {
+            logout() {
+                do_auth();
+                // my_cookie.del(dingding_login_code_str);
+                // location.reload();
+            }
+        }
+    };
+    var Component = Vue.extend(Main);
+    let component = new Component().$mount('#app')
+</script>
+
+</html>

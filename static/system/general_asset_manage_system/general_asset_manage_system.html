@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>通用资产管理</title>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/lib/layui/layui.js"></script>
+    <script src="../../js/service/common.js"></script>
+
+    <link rel="stylesheet" href="../../css/lib/iview.css" type="text/css">
+    <link rel="stylesheet" href="../../js/lib/layui/css/layui.css" type="text/css">
+    <link rel="stylesheet" href="../../css/commen.css" type="text/css">
+    <style>
+        #app {
+            /*padding: 32px;*/
+        }
+
+        .demo-split {
+            height: 100vh;
+            border: 1px solid #dcdee2;
+        }
+
+        .demo-split-pane {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="demo-split">
+        <split v-model="split1">
+            <div slot="left" class="demo-split-pane">
+                资产类型: <span style="font-size: 25px;margin-left: 30px">{{metadata.asset_type_str}}</span><br>
+                <div id="test9"></div>
+                <br/>
+                <br/>
+                <div>
+                    <i-button type="primary" long @click="open_opt_data_struct">调整数据结构</i-button>
+                </div>
+            </div>
+            <div slot="right" class="demo-split-pane">
+                <!--动态搜索表单-->
+                <i-form :model="data.search"
+                        :label-width="80">
+                    <row>
+                        <i-col span="6" v-for="item in data.search_template">
+                            <form-item :label="item.label" :prop="item.prop">
+                                <i-input v-model="item.v_model"></i-input>
+                            </form-item>
+                        </i-col>
+                    </row>
+                    <row>
+                        <i-col span="18">
+                            <i-button type="primary" long @click="insert_data">新增一行</i-button>
+                        </i-col>
+                        <i-col span="6">
+                            <form-item>
+                                <i-button typeo="primary"
+                                          @click="search">
+                                    搜索
+                                </i-button>
+                            </form-item>
+                        </i-col>
+                    </row>
+                </i-form>
+
+                <i-table height="500" stripe border :columns="data.columns1" :data="data.data1"
+                         :loading="data.loading"></i-table>
+                <div style="margin: 10px;overflow: hidden">
+                    <div style="float: right;">
+                        <page show-sizer :total="data.page.total" :current="1"
+                              @on-change="changePage"
+                              @on-page-size-change="changePageSize"
+                        />
+                    </div>
+                </div>
+                <drawer
+                        title="调整数据结构"
+                        v-model="opt_data_struct.show"
+                        :mask-closable="true"
+                        placement="left"
+                        width="360"
+                >
+                    <tabs :value="opt_data_struct.opt_name" @on-click="switch_opt_data_struct_tab"
+                          v-model="opt_data_struct.opt_name" style="height: 300px">
+                        <tab-pane label="新增列" name="insert">
+                            <i-form ref="opt_data_struct.formValidate.insert" :model="opt_data_struct.formResult.insert"
+                                    :rules="opt_data_struct.ruleValidate.insert"
+                                    :label-width="80">
+                                <form-item label="代码值" prop="code">
+                                    <i-input v-model="opt_data_struct.formResult.insert.code"
+                                             placeholder="请输入代码值"></i-input>
+                                </form-item>
+                                <form-item label="代码描述" prop="meaning">
+                                    <i-input v-model="opt_data_struct.formResult.insert.meaning"
+                                             placeholder="请输入 标签"></i-input>
+                                </form-item>
+                                <form-item>
+                                    <i-button typeo="primary"
+                                              @click="opt_data_struct_handleSubmit('opt_data_struct.formValidate.insert')">
+                                        提交
+                                    </i-button>
+                                    <i-button
+                                            @click="opt_data_struct_handleReset('opt_data_struct.formValidate.insert')"
+                                            style="margin-left: 8px">
+                                        重置
+                                    </i-button>
+                                </form-item>
+                            </i-form>
+                        </tab-pane>
+                        <tab-pane label="删除列" name="delete">
+                            <i-form ref="opt_data_struct.formValidate.delete" :model="opt_data_struct.formResult.delete"
+                                    :rules="opt_data_struct.ruleValidate.delete"
+                                    :label-width="80"
+                            >
+                                <form-item label="代码值" prop="code">
+                                    <i-select v-model="opt_data_struct.formResult.delete.code">
+                                        <i-option v-for="item in opt_data_struct.formValidate.delete.code"
+                                                  :value="item.value" :key="item.value">
+                                            {{item.label}}
+                                        </i-option>
+                                    </i-select>
+                                </form-item>
+                                <form-item>
+                                    <i-button typeo="primary"
+                                              @click="opt_data_struct_handleSubmit('opt_data_struct.formValidate.delete')">
+                                        提交
+                                    </i-button>
+                                    <i-button
+                                            @click="opt_data_struct_handleReset('opt_data_struct.formValidate.delete')"
+                                            style="margin-left: 8px">
+                                        重置
+                                    </i-button>
+                                </form-item>
+                            </i-form>
+                        </tab-pane>
+                        <tab-pane label="修改列" name="update">
+                            <i-form ref="opt_data_struct.formValidate.update" :model="opt_data_struct.formResult.update"
+                                    :rules="opt_data_struct.ruleValidate.update"
+                                    :label-width="80"
+                            >
+                                <form-item label="代码值" prop="code">
+                                    <i-select v-model="opt_data_struct.formResult.update.code">
+                                        <i-option v-for="item in opt_data_struct.formValidate.update.code"
+                                                  :value="item.value" :key="item.value">
+                                            {{item.label}}
+                                        </i-option>
+                                    </i-select>
+                                </form-item>
+                                <form-item label="代码描述" prop="meaning">
+                                    <i-input v-model="opt_data_struct.formResult.update.meaning"
+                                             placeholder="请输入 标签"></i-input>
+                                </form-item>
+                                <form-item>
+                                    <i-button typeo="primary"
+                                              @click="opt_data_struct_handleSubmit('opt_data_struct.formValidate.update')">
+                                        提交
+                                    </i-button>
+                                    <i-button
+                                            @click="opt_data_struct_handleReset('opt_data_struct.formValidate.update')"
+                                            style="margin-left: 8px">
+                                        重置
+                                    </i-button>
+                                </form-item>
+                            </i-form>
+
+                        </tab-pane>
+                    </tabs>
+
+                </drawer>
+            </div>
+        </split>
+    </div>
+</div>
+<script>
+    const vue_data = {
+        metadata: {
+            data1: [],
+            asset_type: "",
+            asset_type_str: "",
+        },
+        data: {
+            columns1: [],
+            data1: [],
+            data1_line_backup: {},
+            loading: false,
+            is_in_opt: false,
+            opt_name: "",
+            opt_line: -1,
+            search_template: [],
+            page: {
+                current: 1,
+                total: 0,
+                page_size: 10
+            }
+        },
+        data_struct: [],
+        opt_data_struct: {
+            show: false,
+            opt_name: "insert",
+            formValidate: {
+                insert: {
+                    code: "",
+                    meaning: "",
+                },
+                delete: {
+                    code: [],
+                },
+                update: {
+                    code: "",
+                    meaning: "",
+                },
+            },
+            formResult: {
+                insert: {
+                    code: "",
+                    meaning: "",
+                },
+                delete: {
+                    code: "",
+                    meaning: "",
+                },
+                update: {
+                    code: "",
+                    meaning: "",
+                },
+            },
+            ruleValidate: {
+                insert: {
+                    code: [{required: true, message: '代码值不能为空', trigger: 'blur'}],
+                    meaning: [{required: true, message: '含义不能为空', trigger: 'blur'}],
+                },
+                delete: {
+                    code: [{required: true, message: '代码值不能为空', trigger: 'change'}],
+                    meaning: [{required: true, message: '含义不能为空', trigger: 'blur'}],
+                },
+                update: {
+                    code: [{required: true, message: '代码值不能为空', trigger: 'change'}],
+                    meaning: [{required: true, message: '含义不能为空', trigger: 'blur'}],
+                },
+            },
+        },
+        split1: 0.2,
+    };
+    const vue_methods = {
+        open_opt_data_struct: function () {
+            if (!vue_data.metadata.asset_type || vue_data.metadata.asset_type == "") {
+                component.$Modal.error({
+                    title: "温馨提示",
+                    width: 500,
+                    content: "请先选择一个资产类型",
+                });
+                return;
+            }
+            vue_data.opt_data_struct.show = true;
+        },
+        opt_data_struct_handleSubmit(name) {
+            this.$refs[name].validate(async (valid) => {
+                if (!valid) {
+                    component.$Modal.error({
+                        title: "温馨提示",
+                        width: 500,
+                        content: "参数未填写完整",
+                    });
+                    return;
+                }
+                await do_opt_data_struct(name);
+                this.$refs[name].resetFields();
+            })
+        },
+        opt_data_struct_handleReset(name) {
+            this.$refs[name].resetFields();
+        },
+        switch_opt_data_struct_tab() {
+            do_switch_opt_data_struct_tab();
+        },
+        insert_data() {
+            do_insert_data();
+        },
+        search() {
+            init_table_data();
+        },
+        changePage(current) {
+            vue_data.data.page.current = current;
+            init_table_data();
+        },
+        changePageSize(page_size) {
+            vue_data.data.page.page_size = page_size;
+            init_table_data();
+        },
+    };
+</script>
+<script>
+    const net_request = { // 网络请求
+            base: function (outer_func) {
+                try {
+                    component.$Loading.start();
+                    const res_data = outer_func();
+                    component.$Loading.finish();
+                    return res_data;
+                } catch (e) {
+                    component.$Loading.error();
+                    e.print();
+                    throw e;
+                }
+            },
+            // 资产类型部分
+            get_tree_general_asset_manage_system_metadata: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/metadata_manage/select_tree", request_data);
+                    return res_data;
+                })
+            },
+            insert_tree_general_asset_manage_system_metadata: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/metadata_manage/insert", request_data);
+                    return res_data;
+                })
+            },
+            update_tree_general_asset_manage_system_metadata: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/metadata_manage/update", request_data);
+                    return res_data;
+                })
+            },
+            delete_tree_general_asset_manage_system_metadata: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/metadata_manage/delete", request_data);
+                    return res_data;
+                })
+            },
+            // 数据结构部分
+            get_general_asset_manage_system_data_struct: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/data_manage/select_data_struct", request_data);
+                    return res_data;
+                })
+            },
+            opt_general_asset_manage_system_data_struct: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/data_manage/opt_data_struct", request_data);
+                    return res_data;
+                })
+            },
+            // 数据部分
+            opt_general_asset_manage_system_data: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/data_manage/opt_data", request_data);
+                    return res_data;
+                })
+            },
+            select_general_asset_manage_system_data: async function (request_data) {
+                return this.base(async function () {
+                    const res_data = await axios.post(url_prefix + "/general_asset_manage_system/data_manage/select_data", request_data);
+                    return res_data;
+                })
+            },
+        }
+    ;
+    let Main = {
+        data() {
+            return vue_data;
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    async function init_data() {
+        const net_request_result = await net_request.get_tree_general_asset_manage_system_metadata();
+        // console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        // console.log(JSON.stringify(net_request_result.data));
+        vue_data.metadata.data1 = net_request_result.data;
+        init_view();
+    }
+
+    init_data();
+
+    async function add_metadata(obj) {
+        const pid = obj.data.id;
+        if (!obj.data.children) {
+            obj.data.children = [];
+        }
+        const slice_len = obj.data.children.length;
+        const query_condition = {
+            "pid": pid,
+            "slice_len": slice_len,
+        };
+        try {
+            let net_request_result = await net_request.insert_tree_general_asset_manage_system_metadata(query_condition);
+            // console.log(net_request_result);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const res_data = net_request_result.data;
+            const added_id = res_data["id"];
+            component.$Modal.success({
+                title: "温馨提示",
+                width: 500,
+                content: '添加成功',
+                closable: true
+            });
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+        await init_data();
+    }
+
+    async function update_metadata(obj) {
+        const id = obj.data.id;
+        const name = obj.data.title;
+        const query_condition = {
+            "id": id,
+            "name": name,
+        };
+        try {
+            let net_request_result = await net_request.update_tree_general_asset_manage_system_metadata(query_condition);
+            // console.log(net_request_result);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const res_data = net_request_result.data;
+            component.$Modal.success({
+                title: "温馨提示",
+                width: 500,
+                content: '修改成功',
+                closable: true
+            });
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+        await init_data();
+    }
+
+    async function delete_metadata(obj) {
+        const id = obj.data.id;
+        const query_condition = {
+            "id": id,
+        };
+        try {
+            let net_request_result = await net_request.delete_tree_general_asset_manage_system_metadata(query_condition);
+            // console.log(net_request_result);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const res_data = net_request_result.data;
+            component.$Modal.success({
+                title: "温馨提示",
+                width: 500,
+                content: '删除成功',
+                closable: true
+            });
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+        await init_data();
+    }
+
+
+    function init_view() {
+        layui.use(['tree', 'util'], function () {
+            const tree = layui.tree;
+            tree.render({
+                elem: '#test9'
+                , data: vue_data.metadata.data1
+                , edit: ['add', 'update', 'del']
+                , click: function (obj) {
+                    const id = obj.data.id;
+                    const name = obj.data.title;
+                    if ("root" == id || obj.data.children.length > 0) {
+                        return;
+                    }
+                    vue_data.metadata.asset_type = id;
+                    vue_data.metadata.asset_type_str = name;
+                    init_data_struct();
+                    init_table_data();
+                }
+                , operate: function (obj) {
+                    const type = obj.type;
+                    // console.log("type: " + type);
+                    if (type === 'add') {
+                        add_metadata(obj)
+                    } else if (type === 'update') {
+                        update_metadata(obj)
+                    } else if (type === 'del') {
+                        delete_metadata(obj)
+                    }
+
+                }
+            });
+
+        });
+    }
+</script>
+<script>
+    // 数据结构部分
+    async function init_data_struct() {
+        vue_data.data.loading = true;
+        if ("" == vue_data.metadata.asset_type) return;
+        const request_data = {
+            "asset_type": vue_data.metadata.asset_type
+        };
+        // 加载表格的表头
+        const net_request_result = await net_request.get_general_asset_manage_system_data_struct(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const net_request_data = net_request_result.data;
+        vue_data.data_struct = net_request_data;
+        vue_data.data.columns1 = [];
+        vue_data.data.columns1.push({
+            width: 80,
+            type: 'index',
+            title: '序号',
+            align: 'center'
+        });
+        for (const asset_data_struct_item of net_request_data) {
+            const meaning = asset_data_struct_item["meaning"];
+            vue_data.data.columns1.push({
+                "title": meaning,
+                "key": asset_data_struct_item["code"],
+                sortable: true,
+                resizable: true,
+                align: 'center',
+                titleHtml: meaning + ' <i class="ivu-icon ivu-icon-edit"></i>',
+                editable: true,
+                render: function (h, params) {
+                    // 是否处于编辑状态
+                    if (vue_data.data.is_in_opt && vue_data.data.opt_line == params.index) {
+                        let edit_value = "";
+                        if ("insert" == vue_data.data.opt_name) {
+                        } else if ("update" == vue_data.data.opt_name) {
+                            edit_value = vue_data.data.data1[params.index][params.column.key];
+                        }
+                        return h('Input', {
+                            props: {
+                                type: 'text',
+                                value: edit_value
+                            },
+                            on: {
+                                'on-change'(event) {
+                                    vue_data.data.data1[params.index][params.column.key] = event.target.value;
+                                }
+                            }
+                        })
+                    }
+
+                    return h('div', {
+                        domProps: {
+                            innerHTML: vue_data.data.data1[params.index][params.column.key],
+                        },
+                    })
+                }
+            })
+        }
+
+        vue_data.data.columns1.push({
+            title: '操作',
+            width: 250,
+            align: 'center',
+            render: (h, params) => {
+                const div_data = [];
+                if (vue_data.data.is_in_opt && vue_data.data.opt_line == params.index) {
+                    div_data.push(h('Button', {
+                        props: {
+                            type: 'primary',
+                            size: 'small'
+                        },
+                        style: {
+                            marginRight: '15px',
+                        },
+                        on: {
+                            click: () => {
+                                const cur_line_index = params.index;
+                                const cur_line_data = vue_data.data.data1[cur_line_index];
+                                cancel_opt_data(cur_line_data);
+                            }
+                        }
+                    }, '取消'));
+                    div_data.push(h('Button', {
+                        props: {
+                            type: 'error',
+                            size: 'small'
+                        },
+                        style: {
+                            marginRight: '15px',
+                        },
+                        on: {
+                            click: () => {
+                                const cur_line_index = params.index;
+                                const cur_line_data = vue_data.data.data1[cur_line_index];
+                                opt_data(cur_line_data);
+                            }
+                        }
+                    }, '保存'));
+                }
+                let is_display_edit = true;
+                if (vue_data.data.is_in_opt && vue_data.data.opt_line == params.index && ("update" == vue_data.data.opt_name || "insert" == vue_data.data.opt_name)) {
+                    is_display_edit = false;
+                }
+                if (is_display_edit) {
+                    div_data.push(h('Button', {
+                        props: {
+                            type: 'error',
+                            size: 'small'
+                        },
+                        style: {
+                            marginRight: '15px',
+                        },
+                        on: {
+                            click: () => {
+                                const cur_line_index = params.index;
+                                vue_data.data.is_in_opt = true;
+                                vue_data.data.opt_name = "update";
+                                vue_data.data.opt_line = cur_line_index;
+                                const cur_line_data = vue_data.data.data1[cur_line_index];
+                                vue_data.data.data1[cur_line_index] = cur_line_data;
+                                vue_data.data.data1_line_backup = JSON.parse(JSON.stringify(cur_line_data));
+                            }
+                        }
+                    }, '编辑'));
+                }
+                if (is_display_edit) {
+                    div_data.push(h('Button', {
+                        props: {
+                            type: 'error',
+                            size: 'small'
+                        },
+                        style: {
+                            marginRight: '15px',
+                        },
+                        on: {
+                            click: () => {
+                                component.$Modal.warning({
+                                    title: "温馨提示",
+                                    content: "删除操作不可逆, 确定删除?",
+                                    okText: "确定",
+                                    onOk: function () {
+                                        const cur_line_index = params.index;
+                                        vue_data.data.is_in_opt = true;
+                                        vue_data.data.opt_name = "delete";
+                                        vue_data.data.opt_line = cur_line_index;
+                                        const cur_line_data = vue_data.data.data1[cur_line_index];
+                                        opt_data(cur_line_data);
+                                    },
+                                    closable: true,
+                                    onCancel: function () {
+
+                                    },
+                                    cancelText: ""
+                                });
+
+                            }
+                        }
+                    }, '删除'));
+                }
+                return h('div', div_data);
+            }
+        });
+        // 加载数据到搜索表单上
+        const temp_search_template = [];
+        for (const asset_data_struct_item of net_request_data) {
+            const code = asset_data_struct_item["code"];
+            const meaning = asset_data_struct_item["meaning"];
+            temp_search_template.push({
+                "label": meaning,
+                "prop": code,
+                "v_model": ""
+            });
+        }
+        vue_data.data.search_template = temp_search_template;
+        vue_data.data.loading = false;
+    }
+
+    const opt_name_mapping_meaning = {
+        "insert": "新增",
+        "update": "修改",
+        "delete": "删除",
+    };
+
+    async function do_opt_data_struct() {
+        try {
+            const opt_name = vue_data.opt_data_struct.opt_name;
+            const request_data = vue_data.opt_data_struct.formResult[opt_name];
+            request_data["opt_name"] = opt_name;
+            request_data["asset_type"] = vue_data.metadata.asset_type;
+            console.log(request_data);
+            await net_request.opt_general_asset_manage_system_data_struct(request_data);
+            component.$Modal.success({
+                title: "操作成功",
+                width: 500,
+                content: opt_name_mapping_meaning[opt_name] + '成功',
+                closable: true
+            });
+            await do_switch_opt_data_struct_tab();
+            await init_data_struct();
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+    }
+
+    async function do_switch_opt_data_struct_tab() {
+        const opt_name = vue_data.opt_data_struct.opt_name;
+        if ("update" == opt_name || "delete" == opt_name) {
+            const request_data = {
+                "asset_type": vue_data.metadata.asset_type
+            };
+            const net_request_result = await net_request.get_general_asset_manage_system_data_struct(request_data);
+            if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+            const net_request_data = net_request_result.data;
+            const temp_result = [];
+            for (const asset_data_struct_item of net_request_data) {
+                temp_result.push({
+                    "value": asset_data_struct_item["code"],
+                    "label": asset_data_struct_item["meaning"],
+                })
+            }
+            vue_data.opt_data_struct.formValidate.delete.code = temp_result;
+            vue_data.opt_data_struct.formValidate.update.code = temp_result;
+        }
+    }
+
+    async function do_insert_data() {
+        if (!vue_data.metadata.asset_type || vue_data.metadata.asset_type == "") {
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: "请先选择一个资产类型",
+            });
+            return;
+        }
+        // 不能连续新增/修改
+        if (vue_data.data.is_in_opt) {
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: "不能连续新增/修改",
+            });
+            return;
+        }
+
+        vue_data.data.is_in_opt = true;
+        vue_data.data.opt_name = "insert";
+        // 形成列
+        const temp_data_one = {};
+        for (const item of vue_data.data.columns1) {
+            const key = item["key"];
+            if (key && key != "") {
+                temp_data_one[key] = "";
+            }
+        }
+        vue_data.data.opt_line = vue_data.data.data1.length;
+        vue_data.data.data1.push(temp_data_one);
+    }
+
+    async function opt_data(cur_line_data) {
+        // 操作类型
+        try {
+            const opt_name = vue_data.data.opt_name;
+            let request_data = {};
+            if ("insert" == opt_name) {
+                request_data = cur_line_data;
+            } else if ("update" == opt_name) {
+                request_data["old_data"] = vue_data.data.data1_line_backup;
+                request_data["new_data"] = cur_line_data;
+            } else if ("delete" == opt_name) {
+                request_data = cur_line_data;
+            }
+            request_data["opt_name"] = opt_name;
+            request_data["asset_type"] = vue_data.metadata.asset_type;
+            await net_request.opt_general_asset_manage_system_data(request_data);
+            component.$Modal.success({
+                title: "操作成功",
+                width: 500,
+                content: opt_name_mapping_meaning[opt_name] + '成功',
+                closable: true
+            });
+            vue_data.data.is_in_opt = false;
+            vue_data.data.opt_name = "";
+            vue_data.data.opt_line = -1;
+            // 刷新表格数据
+            await init_table_data();
+        } catch (e) {
+            console.log(e);
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: e.response.data,
+            });
+        }
+    }
+
+    async function init_table_data() {
+        if (!vue_data.metadata.asset_type || vue_data.metadata.asset_type == "") {
+            component.$Modal.error({
+                title: "温馨提示",
+                width: 500,
+                content: "请先选择一个资产类型",
+            });
+            return;
+        }
+        const request_data = {};
+        request_data["asset_type"] = vue_data.metadata.asset_type;
+        const search = {};
+        for (const item of vue_data.data.search_template) {
+            if (item["v_model"] && item["v_model"].trim() != "") {
+                search[item["prop"]] = {"$regex": item["v_model"]};
+            }
+        }
+        request_data["page"] = vue_data.data.page;
+        request_data["search"] = search;
+        const net_request_result = await net_request.select_general_asset_manage_system_data(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        console.log(vue_data.data.data1);
+        vue_data.data.data1 = net_request_result.data.data;
+        vue_data.data.page.total = net_request_result.data.total;
+    }
+
+    async function cancel_opt_data(cur_line_data) {
+        const opt_name = vue_data.data.opt_name;
+        if ("insert" == opt_name) {
+            vue_data.data.data1.pop();
+        } else if ("update" == opt_name) {
+            // 还原
+            vue_data.data.is_in_opt = false;
+            vue_data.data.opt_name = "";
+            const cur_line = vue_data.data.opt_line;
+            vue_data.data.opt_line = -1;
+            vue_data.data.data1[cur_line] = vue_data.data.data1_line_backup;
+        }
+        vue_data.data.is_in_opt = false;
+        vue_data.data.opt_name = "";
+        vue_data.data.opt_line = -1;
+    }
+</script>
+</body>
+</html>

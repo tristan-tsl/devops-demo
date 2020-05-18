@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>告警配置</title>
+    <script src="../js/lib/vue.min.js"></script>
+    <script src="../js/lib/iview/iview.min.js"></script>
+
+    <script src="../js/lib/axios/axios.min.js"></script>
+    <script src="../js/service/common.js"></script>
+    <link rel="stylesheet" href="../css/lib/iview.css">
+
+    <link href="../css/lib/jsoneditor/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="../js/lib/jsoneditor/jsoneditor.min.js"></script>
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <tabs value="config_file" height="100">
+        <tab-pane label="后台配置" name="config_agent">
+            <row :gutter="16">
+                <i-col span="24">
+                    <i-button type="success" long @click="upload_data">上传 告警配置 信息</i-button>
+                    <div id="svn" style=" height: 85vh;"></div>
+                </i-col>
+            </row>
+        </tab-pane>
+        <tab-pane label="告警规则配置" name="config_file">
+            <i-menu mode="horizontal" @on-select="on_menu_select">
+                <menu-item :name="item.name" v-for="item in menu_data">
+                    {{item.desc}}
+                </menu-item>
+            </i-menu>
+            <i-input v-model="config_file" type="textarea" :autosize="true" size="large"></i-input>
+            <br/>
+            <br/>
+            <i-button type="success" long @click="upload_data_config_file">上传 告警规则配置</i-button>
+        </tab-pane>
+    </tabs>
+</div>
+</body>
+<script>
+    let last_select_menu_name = null;
+    const vue_data = {
+        cur_login_name: my_cookie.get(dingding_login_name_str),
+        config_file: "",
+        menu_data: []
+    };
+    var Main = {
+        data() {
+            return vue_data
+        },
+        methods: {
+            upload_data() {
+                component.$Loading.start();
+                upload_data();
+            },
+            upload_data_config_file() {
+                component.$Loading.start();
+                upload_data_config_file();
+            },
+            async on_menu_select(name) {
+                await init_get_config_file(name);
+            }
+
+        }
+    };
+    var Component = Vue.extend(Main);
+    let component = new Component().$mount('#app');
+    const svn_editor = new JSONEditor(document.getElementById("svn"), {});
+    const net_request = { // 网络请求
+        get: async function () {
+            return await axios.get(url_prefix + "/alarm/config/get");
+        },
+        update: async function (request_data) {
+            const res_data = await axios.put(url_prefix + "/alarm/config/put", request_data);
+            return res_data;
+        },
+        get_config_file: async function (request_data) {
+            return await axios.post(url_prefix + "/monitoring/config/get_alarm_config_file", request_data);
+        },
+        update_config_file: async function (request_data) {
+            const res_data = await axios.put(url_prefix + "/monitoring/config/put_alarm_config_file", request_data);
+            return res_data;
+        }
+    };
+    let last_upload_data = {};
+    (async function init_get_auth_manage() {
+        const net_request_result = await net_request.get();
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+        const level_data_component = data[0]["alarm__config"]["component"];
+        for (const component_key in level_data_component) {
+            let temp_data = {
+                name: component_key,
+                desc: level_data_component[component_key]["desc"]
+            };
+            vue_data.menu_data.push(temp_data);
+        }
+        last_upload_auth_manage_data = data;
+        delete data["_id"];
+        let svn_data = data;
+
+        if (svn_data) {
+            svn_editor.set(svn_data);
+            svn_editor.expandAll();
+        }
+    })();
+
+    async function init_get_config_file(cur_select_menu_name) {
+        if (last_select_menu_name == cur_select_menu_name) return;// 对比上一个menu看是否不一样
+        vue_data.config_file = "";
+        const net_request_result = await net_request.get_config_file({name: cur_select_menu_name});
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const data = net_request_result.data;
+        if (data.length > 0) {
+            const config_file = data[0];
+            if (config_file) {
+                const config_file_config_file = config_file["config_file"];
+                if (config_file_config_file) {
+                    vue_data.config_file = config_file_config_file;
+                }
+            }
+        }
+        last_select_menu_name = cur_select_menu_name;
+    }
+
+    async function upload_data() {
+        let request_data = await svn_editor.get();
+        let is_change = false;
+        if (!deepEqual(request_data, last_upload_data)) is_change = true;
+
+        if (!is_change) {
+            component.$Loading.finish();
+            component.$Message.info('内容并未修改无须保存');
+            return;
+        }
+
+        const net_request_result = await net_request.update(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) {
+            component.$Loading.error();
+            component.$Message.error('保存失败');
+            return;
+        }
+        component.$Loading.finish();
+        component.$Message.success('保存成功');
+        const data = net_request_result.data;
+        console.log(data);
+        last_upload_data = request_data;
+    }
+
+    async function upload_data_config_file() {
+        const net_request_result = await net_request.update_config_file({
+            config_file: vue_data.config_file,
+            name: last_select_menu_name
+        });
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) {
+            component.$Loading.error();
+            component.$Message.error('保存失败');
+            return;
+        }
+        component.$Loading.finish();
+        component.$Message.success('保存成功');
+        const data = net_request_result.data;
+        console.log(data);
+    }
+</script>
+
+</html>

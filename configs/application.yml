@@ -1,0 +1,28 @@
+mongo:
+  host: 192.168.71.96
+  port: 27017
+  db: devops_platform
+  username: ENC(gAAAAABdX0v0aoUsfPsFDH9vxKxAbSYjoQBMpgy07Kry51bSmHRJh52jx9TJn3ACtdqj6rNUgGsgQQfjNY0DjTm4o4Ot-RuBdA==)
+  password: ENC(gAAAAABdX0EEX9n-zieDXwb_rEqj-jwK6ToL6QRJsxrTPthztTH0hXOrSuRVR9UuA9WTMf13emWJ6aSbfQaBxalhCPbSyNIhBg==)
+dingding:
+  login:
+    appid: ENC(gAAAAABdm-ZD1JmLH_EGfQAH9xavCKOdxudWtJJq-js2SbftUcZuCPJoXd-VHAItVdWZrm8DRqTwhL0VTTGUI8FCCTiVKy5B11gTXvS7kDqq8PhUbFjf8zY=)
+    appsecret: ENC(gAAAAABdm-ZDlvJZt80bJGJpjylpOcmJkuVu9CDjatDPBjpJ4BTgyEOXDzmn0Chj1OsbCjX7WwrjSbeaMHgRZdY1QiE8S4YeAyba6avLrHM5KkapXGjDG5_3k_h7ZT9tmsAf1HLqTCmabxysp8uVka_812uH3ytu2fTgjq_ILNjcGx8YMIknCfo=)
+  robot_msg:
+      project_manage:
+        access_token: ENC(gAAAAABdX0vT52vuiEc-iPKQB1cfoxVFfcyjH6750j4tuVfD543T1UZs2rxpC_-eI55Vht6NtpAblH-hzDWQ7b7boC9ITVPsWBKScv5cMy8c18aMG-tbsHa-cN_wZ4UcnUKR3fWXBGG6YyUY9ueKrCp96usEu8q2yxOmyWcdEyILmVG4lBe_EAw=)
+project:
+  pubic_url: http://yibainetwork1.natapp1.cc
+inception:
+  host: 192.168.71.96
+  port: ENC(gAAAAABdiGgcJMN5iroCeldx5fTqbG-6w6QrhU-_CTq8XJ2IxiE2DBTWkC9Lucz-CDx6rwP9B92TFr7PwOGMGtriUXmGkdKImg==)
+  backup:
+    host: 192.168.71.96
+    port: ENC(gAAAAABdiGgcoj5nnaInMd7T0yn0i-UGEk15kc7g2wLozEMb0uZAGmzFFBdT0cctzhJ0krYeI7mbj_U0EqwmSYbRSevPM7R3JA==)
+    username: ENC(gAAAAABdiGgcYTjSad54tDOq_CB9ZKBkT4u7A__QtT4d8tVDfeuVecZX-hztyhf81Q7SEpuqs9XRRCI2BrUBpF5oTMQlYfsTLQ==)
+    password: ENC(gAAAAABdiGgc4MXLUJxsPNnevh_ZbwMG7YLDOblvdh_UE4Ow7kj3F1ulbluhoSD_nQVNsXIff_b8kMd1jvp8XZHdN0sqCs6L6A==)
+mysql:
+  mydumper_server:
+    host: 192.168.71.96
+    username: ENC(gAAAAABdigl6c7R-EbpdcgYT_WnMWMcBRGw_7W8-joninTiwbnc4kOadebMWbWh5_-PLnoI9oqPqP-Gg2Tz5OtM1kM4kZkaf0g==)
+    password: ENC(gAAAAABdigl6RfXHvopMV6et7dX_wm2jgab9cCvnJbBJA2ENnZPaz-zWVCWIAiOy1XAX9SswRsAUteJRHX87xpvMD77kte2FFg==)

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>加密工具</title>
+    <script src="js/lib/vue.min.js"></script>
+    <script src="js/lib/iview/iview.min.js"></script>
+
+    <script src="js/lib/axios/axios.min.js"></script>
+    <script src="js/service/common.js"></script>
+    <link rel="stylesheet" href="css/lib/iview.css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<div id="app">
+    <i-form ref="formValidate.search" :model="formResult.search" :label-width="80">
+        <row>
+            <i-col span="18">
+                <form-item label="原始值" prop="encrypt_value">
+                    <i-input v-model="formResult.search.encrypt_value"></i-input>
+                </form-item>
+            </i-col>
+            <i-col span="6">
+                <form-item style="text-align: right">
+                    <i-button icon="ios-search" type="primary" @click="handleSubmit('formValidate.search')">加密
+                    </i-button>
+                </form-item>
+            </i-col>
+        </row>
+    </i-form>
+    加密结果: {{formDisplay.encrypt_value}}
+</div>
+</body>
+<script>
+    const vue_data = {
+        formValidate: {
+            search: {
+                encrypt_value: "",
+            }
+        },
+        formResult: {
+            search: {
+                encrypt_value: "",
+            },
+            page: {
+                current: 1,
+                total: 0,
+                page_size: 10
+            }
+        },
+        formDisplay: {
+            encrypt_value: ""
+        }
+    };
+    const vue_methods = {
+        handleSubmit(name) {
+            init_data();
+        },
+    }
+</script>
+<script>
+    const Main = {
+        data() {
+            return vue_data
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    // 网络请求
+    const net_request = {
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        query: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.post(url_prefix + "/encrypt_tool/encrypt", request_data);
+                return res_data;
+            })
+        },
+    };
+
+    async function init_data() {
+        const request_data = vue_data.formResult.search;
+        const net_request_result = await net_request.query(request_data);
+        console.log(net_request_result);
+        if (!net_request_result || !net_request_result.status || net_request_result.status != 200 || !net_request_result.data) return;
+        const net_request_result_data = net_request_result.data;
+        vue_data.formDisplay.encrypt_value = "ENC(" + net_request_result_data + ")";
+    }
+</script>
+
+</html>

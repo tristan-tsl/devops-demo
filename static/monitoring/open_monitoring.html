@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>开放监控</title>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/service/common.js"></script>
+    <link rel="stylesheet" href="../../css/lib/iview.css">
+    <style>
+        #app {
+            padding: 32px;
+        }
+    </style>
+</head>
+<div id="app" style="width: 100vw;height: 100vh;margin: 0px;padding: 0px">
+    <tabs height="100" style="width: 90vw;height: 100vh;margin: 0px;padding: 0px">
+        <tab-pane :label="item.label" v-for="item in data">
+            <iframe :src="item.url" style="width: 100%;height: 100vh;"
+                    frameborder="0" scrolling="auto"></iframe>
+        </tab-pane>
+    </tabs>
+</div>
+</body>
+
+
+<script>
+    const vue_data = {
+        data: [],
+        host: {
+            label: "",
+            url: "",
+        }
+
+    };
+    const vue_methods = {};
+</script>
+<script>
+    var Main = {
+        data() {
+            return vue_data;
+        },
+        methods: vue_methods
+    };
+    const component = new (Vue.extend(Main))().$mount('#app');
+</script>
+<script>
+    // 得到项目部署模板
+    const net_request = { // 网络请求
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        // 流程使用
+        get_grafana: async function () {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/monitoring/config/get_grafana");
+                return res_data;
+            })
+        }
+    };
+
+    async function init_grafana_list() { // 初始化grafana列表
+        const net_res_result = await net_request.get_grafana();
+        const net_res_data = net_res_result.data;
+        for (const key in net_res_data) {
+            vue_data.data.push(net_res_data[key]);
+        }
+    }
+
+    init_grafana_list();
+</script>
+</html>

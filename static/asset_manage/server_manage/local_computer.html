@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>本地机房</title>
+    <link href="../../css/lib/jsoneditor/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="../../js/lib/jsoneditor/jsoneditor.min.js"></script>
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+    <script src="../../js/lib/axios/axios.min.js"></script>
+    <script src="../../js/service/common.js"></script>
+    <link rel="stylesheet" href="../../css/lib/iview.css">
+    <link rel="stylesheet" href="../../css/commen.css" type="text/css">
+    <script src="../../js/lib/vue.min.js"></script>
+    <script src="../../js/lib/iview/iview.min.js"></script>
+    <link rel="stylesheet" href="../../css/iconfont/iconfont.css" type="text/css">
+</head>
+<body>
+ <div id="app">
+     <ul class="opertionItem">
+         <li @click="addMachine"><i class="iconfont icon-xinzeng1"></i> 新增机柜</li>
+         <li @click="ModifyMachine"><i class="iconfont icon-bianjihexiugai"></i> 修改机柜</li>
+         <li @click="addServer"><i class="iconfont icon-xinzeng1"></i> 新增服务器</li>
+     </ul>
+     <ul class="clearfix">
+         <li class="wrapper" v-for="item in baseData">
+             <ul>
+                 <li style="margin-top: 50px;margin-left: 70px" v-for="item_ in item.detail">
+                     <Tooltip placement="top">
+                         <p class="wrapper-item">{{item_.type}}</p>
+                         <div slot="content" style="background: #ffffff">
+                             <p style="color:#659aff"><span style="float: left" class="changeUserInfo" @click="changeUserInfo">修改信息</span><span @click="findUserInfo" class="findUserInfo">查看用户信息</span></p>
+                             <table  cellpadding="0" cellspacing="0">
+                                 <tr>
+                                     <td>cpu</td>
+                                     <td>{{item_.cpu}}</td>
+                                 </tr>
+                                 <tr>
+                                     <td>内存</td>
+                                     <td>{{item_.memory}}</td>
+                                 </tr>
+                                 <tr>
+                                     <td>磁盘</td>
+                                     <td>{{item_.disk}}</td>
+                                 </tr>
+                                 <tr>
+                                     <td>系统</td>
+                                     <td>{{item_.system}}</td>
+                                 </tr>
+                                 <tr>
+                                     <td>虚拟机</td>
+                                     <td>{{item_.virtual}}</td>
+                                 </tr>
+                             </table>
+                         </div>
+                     </Tooltip>
+                 </li>
+             </ul>
+         </li>
+     </ul>
+     <Icon type="checkmark"></Icon>
+
+     <!--用户信息弹窗开始-->
+     <Modal
+             v-model="dialog.isFindUserInfo"
+             title="用户信息"
+             >
+         <div class="clearfix">
+             <div class="left">
+                 <span style="cursor: pointer"><i class="iconfont icon-kaiqi" style="color: rgb(255, 152, 96)"></i>  启用</span>
+                 <span style="cursor: pointer"><i  class="iconfont icon-tingyong" style="color: rgb(255, 101, 98)"></i>  停用</span>
+                 <span style="cursor: pointer"><i class="iconfont icon-xinzeng1" style="color: rgb(114, 175, 255)"></i>  添加</span>
+                 <i-table :data="userinfo.user_name" :columns="userinfo.name_title"></i-table>
+             </div>
+             <div class="right">
+                 <div  style="padding-left: 20px;border:1px solid #dcdfe6;margin-left: 10px;width: 95%;margin-top: 18px">
+                     <Tree :data="authData" show-checkbox @on-check-change="checkedBox"></Tree>
+                 </div>
+             </div>
+         </div>
+     </Modal>
+     <!--用户信息弹窗结束-->
+     <!--修改信息开始-->
+     <Modal
+     v-model="dialog.isModifyInfo"
+     title="修改信息"
+     >
+         <div>
+             <i-form label-position="right" :label-width="100">
+                 <Form-item label="名称">
+                     <i-input v-model="add.name"></i-input>
+                 </Form-item>
+                 <Form-item label="信号">
+                     <i-input v-model="changeValue.type"></i-input>
+                 </Form-item>
+                 <Form-item label="位置" class="clearfix">
+                     <i-input v-model="changeValue.sorting" style="float: left;width: 70%;"></i-input><span style="float: right"><span>第</span> <i-input v-model="changeValue.sorting" style="width: 50px"></i-input><span>列</span> </span>
+                 </Form-item>
+                 <Form-item label="配置">
+                     <div class="addConfigur">
+                         <i-form label-position="right">
+                             <Form-item label="CPU">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="磁盘">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="内存">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="系统">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                         </i-form>
+                     </div>
+                 </Form-item>
+                 <Form-item label="简要说明">
+                     <i-input v-model="changeValue.instru" type="textarea"></i-input>
+                 </Form-item>
+             </i-form>
+         </div>
+
+     </Modal>
+     <!--修改信息结束-->
+     <!--新增机柜开始-->
+     <Modal
+             v-model="dialog.isAddMachine"
+             title="新增机柜"
+     >
+         <div>
+             <i-form label-position="right" :label-width="100">
+                 <Form-item label="名称">
+                     <i-input v-model="changeValue.name"></i-input>
+                 </Form-item>
+                 <Form-item label="规格">
+                     <i-input v-model="changeValue.type"></i-input>
+                 </Form-item>
+                 <Form-item label="排序">
+                     <i-input v-model="changeValue.sorting"></i-input>
+                 </Form-item>
+                 <Form-item label="简要说明">
+                     <i-input v-model="changeValue.instru"></i-input>
+                 </Form-item>
+             </i-form>
+         </div>
+     </Modal>
+     <!--新增机柜结束-->
+     <!--修改机柜开始-->
+     <Modal
+             v-model="dialog.isModifyMachine"
+             title="修改机柜"
+     >
+         <div>
+             <i-form label-position="right" :label-width="100">
+                 <Form-item label="名称">
+                     <i-input v-model="add.name"></i-input>
+                 </Form-item>
+                 <Form-item label="规格">
+                     <i-input v-model="changeValue.type"></i-input>
+                 </Form-item>
+                 <Form-item label="排序">
+                     <i-input v-model="changeValue.sorting"></i-input>
+                 </Form-item>
+                 <Form-item label="简要说明">
+                     <i-input v-model="changeValue.instru"></i-input>
+                 </Form-item>
+             </i-form>
+         </div>
+     </Modal>
+     <!--修改机柜结束-->
+     <!--新增服务器开始-->
+     <Modal
+             v-model="dialog.isAddServer"
+             title="新增服务器">
+         <div>
+             <i-form label-position="right" :label-width="100">
+                 <Form-item label="名称">
+                     <i-input v-model="add.name"></i-input>
+                 </Form-item>
+                 <Form-item label="信号">
+                     <i-input v-model="changeValue.type"></i-input>
+                 </Form-item>
+                 <Form-item label="位置" class="clearfix">
+                     <i-input v-model="changeValue.sorting" style="float: left;width: 70%;"></i-input><span style="float: right"><span>第</span> <i-input v-model="changeValue.sorting" style="width: 50px"></i-input><span>列</span> </span>
+                 </Form-item>
+                 <Form-item label="配置">
+                     <div class="addConfigur">
+                         <i-form label-position="right">
+                             <Form-item label="CPU">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="磁盘">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="内存">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                             <Form-item label="系统">
+                                 <i-input v-model="changeValue.sorting"></i-input>
+                             </Form-item>
+                         </i-form>
+                     </div>
+                 </Form-item>
+                 <Form-item label="简要说明">
+                     <i-input v-model="changeValue.instru" type="textarea"></i-input>
+                 </Form-item>
+             </i-form>
+         </div>
+     </Modal>
+     <!--新增服务器结束-->
+
+
+ </div>
+
+
+</body>
+</html>
+<script>
+    const vue_data = {
+        baseData: [
+            {
+                detail:[{
+                    userinfo:{
+                        columns1: [
+                            {
+                                type: 'selection',
+                                width: 60,
+                                align: 'center'
+                            },
+                            {
+                                title: '序号',
+                                key: 'index'
+                            },
+                            {
+                                title: '姓名',
+                                key: 'name'
+                            }
+                        ],
+                        data1: [
+                            {
+                                name: '王明',
+                                age: 18,
+                                address: '北京市朝阳区芍药居'
+                            },
+                            {
+                                name: '张刚',
+                            },
+                            {
+                                name: '李红',
+                            },
+                            {
+                                name: '周伟',
+                            }
+                        ]
+                    },
+                    authData:[{
+                        expand: true,
+                        title: '权限设置',
+                        children: [{
+                            title: '权限设置 1-0',
+                            expand: true,
+                            disabled: true,
+                            children: [{
+                                title: '权限设置1',
+                                disableCheckbox: true
+                            }, {
+                                title: '权限设置2',
+                            }]
+                        }, {
+                            title: '平台权限 1-1',
+                            expand: true,
+                            checked: true,
+                            type:'html',
+                            children: [{
+                                title: '添加 ',
+                            }]
+                        }]
+                    }],
+                    server:{
+                        type:'dell',
+                        cpu:'1',
+                        memory:'1',
+                        disk:'1',
+                        system: '1',
+                        virtual:'1',
+                        info: '',
+                        location: '',
+                        name: '',
+                        column: '',
+                        serverArray: '',
+                        description: ''
+                    }
+                }],
+            }
+        ],
+        // userinfo:{
+        //     name_title: [
+        //         {
+        //             title: '序号',
+        //             type: 'index'
+        //         },
+        //         {
+        //             title: '姓名',
+        //             key: 'name'
+        //         }
+        //     ],
+        //     user_name: []
+        // },
+        userinfo:{
+            name_title: [
+                {
+                    type: 'selection',
+                    width: 60,
+                    align: 'center'
+                },
+                {
+                    type: 'index',
+                    title: '序号'
+                },
+                {
+                    title: '姓名',
+                    key: 'name'
+                }
+            ],
+            user_name: [
+                {
+                    name: '王明',
+                    age: 18,
+                    address: '北京市朝阳区芍药居'
+                },
+                {
+                    name: '张刚',
+                },
+                {
+                    name: '李红',
+                },
+                {
+                    name: '周伟',
+                }
+            ],
+
+        },
+        dialog:{
+            isFindUserInfo: false,
+            isModifyInfo: false,
+            isAddMachine: false,
+            isModifyMachine: false,
+            isAddServer: false
+        },
+        userData:{
+            name_title: [
+                {
+                    title: '序号',
+                    type: 'index'
+                },
+                {
+                    title: '姓名',
+                    key: 'name'
+                }
+            ],
+            user_name: [
+                {
+                    name: 'key',
+                },
+            ]
+        },
+        authData:[{
+            expand: true,
+            title: '权限设置',
+            children: [{
+                title: '权限设置 1-0',
+                expand: true,
+                disabled: true,
+                children: [{
+                    title: '权限设置1',
+                    disableCheckbox: true
+                }, {
+                    title: '权限设置2',
+                }]
+            }, {
+                title: '平台权限 1-1',
+                expand: true,
+                checked: true,
+                type:'html',
+                children: [{
+                    title: '添加 ',
+                }]
+            }]
+        }],
+        changeValue: {
+            type: '',
+            cpu: '',
+            memory: '',
+            disk: '',
+            system: '',
+            virtual: ''
+        },
+        add: {
+            name: '',
+            type: '',
+            sorting: '',
+            instru: ''
+        },
+        res:''
+    };
+    const vue_methods = {
+        findUserInfo(data){
+            this.dialog.isFindUserInfo = true;
+        },
+        checkedBox(val){
+            console.log('val',val)
+        },
+        changeUserInfo(){
+            vue_data.dialog.isModifyInfo = true;
+            console.log('vue_data.baseData',vue_data.res)
+
+        },
+        addMachine(){
+            vue_data.dialog.isAddMachine = true
+
+        },
+        ModifyMachine(){
+            vue_data.dialog.isModifyMachine = true
+        },
+        addServer(){
+            vue_data.dialog.isAddServer = true
+        }
+    };
+    const Main = {
+        data() {
+            return vue_data
+        },
+        methods: vue_methods
+    };
+
+    const component = new (Vue.extend(Main))().$mount('#app');
+
+
+    const net_request = {
+        base: function (outer_func) {
+            try {
+                component.$Loading.start();
+                const res_data = outer_func();
+                component.$Loading.finish();
+                return res_data;
+            } catch (e) {
+                component.$Loading.error();
+                e.print();
+                throw e;
+            }
+        },
+        listData: async function (request_data) {
+            return this.base(async function () {
+                const res_data = await axios.get(url_prefix + "/asset_manage/server_manage/data", request_data);
+                vue_data.baseData=res_data.data;
+                for(let key in res_data.data) {
+                    let res = res_data.data[key];
+                    console.log('res_data.data[key]0',res_data.data[key])
+                }
+                return res_data;
+            })
+        },
+    };
+    init_data();
+    async function init_data(request_data) {
+        const net_request_result = await net_request.listData(request_data);
+        console.log('net_request_result',net_request_result)
+
+    }
+
+</script>
+
+<style>
+    .wrapper{
+        background: url("../../image/jigui.png") no-repeat;
+        width: 394px !important;
+        height: 726px;
+        float: left;
+
+    }
+    .wrapper-item{
+        background: url("../../image/fuwuqi.png") no-repeat;
+        width: 265px;
+        height: 36px;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 7px 23px;
+    }
+    .wrapper td{
+         border-left:1px solid #dcdfe6 !important;
+         border-bottom:1px solid #dcdfe6 !important;
+        border-right: 1px solid #dcdfe6 !important;
+        padding: 5px 30px;
+        color: #333333;
+     }
+    .wrapper tr:first-child td{
+        border-top:1px solid #dcdfe6 !important;
+        border-bottom:1px solid #dcdfe6 !important;
+
+    }
+    .wrapper tr td:first-child{
+        border-right: none !important;
+    }
+    .ivu-tooltip-inner{
+        background: #ffffff;
+    }
+    .ivu-tooltip-arrow{
+        border-bottom-color:#ffffff !important;
+    }
+    .left,.right{
+        float: left;
+        width: 50%;
+    }
+
+
+</style>

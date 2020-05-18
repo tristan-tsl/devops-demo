@@ -1,0 +1,26 @@
+[
+  {
+    title: '总经办',
+    children: [
+      {
+        title: '账号管理',
+        role_name: [
+          {
+            title: 'leaf'
+          },
+          {
+            title: 'leaf'
+          }
+        ]
+      },
+      {
+        title: '内控',
+        role_name: [
+          {
+            title: 'leaf'
+          }
+        ]
+      }
+    ]
+  }
+]

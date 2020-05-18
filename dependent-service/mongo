@@ -1,0 +1,22 @@
+参考文档:
+https://hub.docker.com/_/mongo/?ref=login
+https://hub.docker.com/_/mongo-express
+
+安装mongodb 及其关联界面
+docker pull mongo:4.0.11-xenial
+docker pull mongo-express
+
+docker network create some-network
+
+docker stop mymongo
+docker rm   mymongo
+rm -rf   /data/tristan/mongodb/data
+mkdir -p  /data/tristan/mongodb/data && cd /data/tristan/mongodb/data
+docker run --network some-network --name mymongo --restart=always -e MONGO_INITDB_ROOT_USERNAME=tristan -e MONGO_INITDB_ROOT_PASSWORD=mongoTristan -v /data/tristan/mongodb/data:/data/db -p 27017:27017 -d mongo:4.0.11-xenial
+docker logs -f mymongo
+
+
+docker stop mymongo-express
+docker rm mymongo-express
+docker run --network some-network --name mymongo-express --restart=always -e ME_CONFIG_MONGODB_SERVER=192.168.71.96 -e ME_CONFIG_MONGODB_ADMINUSERNAME=tristan -e ME_CONFIG_MONGODB_ADMINPASSWORD=mongoTristan -p 8081:8081 -d mongo-express
+docker logs mymongo-express
