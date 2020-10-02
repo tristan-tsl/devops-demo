@@ -1,4 +1,4 @@
-开发语言及版本: python 3.x
+开发语言及版本: python 3.7
 
 安装环境依赖: pip install -r requirements.txt
 
